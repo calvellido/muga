@@ -8,6 +8,7 @@ import {
   type NodeDef,
   type NodePath,
 } from "@muga/fsapi-core";
+import { applyBehavior, type SimState } from "./behaviors.ts";
 import { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
 
 export interface SimulatorOptions {
@@ -22,6 +23,8 @@ export interface SimulatorOptions {
   notifyHoldMs?: number;
   /** When false, GET_MULTIPLE / SET_MULTIPLE answer HTTP 404 like older firmware. */
   supportsMultiple?: boolean;
+  /** Apply radio-like side effects (e.g. selecting a preset changes what is playing). Default true. */
+  behaviors?: boolean;
 }
 
 export interface SimRequest {
@@ -150,6 +153,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const pin = options.pin ?? "1234";
   const notifyHoldMs = options.notifyHoldMs ?? 5_000;
   const supportsMultiple = options.supportsMultiple ?? true;
+  const behaviors = options.behaviors ?? true;
   const profile: SimProfile = {
     values: { ...DEFAULT_PROFILE.values, ...options.profile?.values },
     lists: { ...DEFAULT_PROFILE.lists, ...options.profile?.lists },
@@ -209,6 +213,28 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     flush();
   };
 
+  const state: SimState = {
+    get(path) {
+      const entry = lookupNode(path);
+      return entry ? scalars.get(entry.path) : undefined;
+    },
+    set(path, value) {
+      const { path: canonical, def } = resolve(path);
+      if (def.type === "list") throw new Error(`${canonical} is a list; use setList`);
+      scalars.set(canonical, toWire(def, value, canonical));
+      notify(canonical, def);
+    },
+    list(path) {
+      return (lists.get(resolve(path).path) ?? []).map((item) => ({ ...item }));
+    },
+    setList(path, items) {
+      lists.set(
+        resolve(path).path,
+        items.map((item) => ({ ...item })),
+      );
+    },
+  };
+
   /** Known node, implemented by this simulated model. */
   const known = (node: string | undefined) => {
     const entry = node ? lookupNode(node) : undefined;
@@ -230,6 +256,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     if ("status" in outcome) return outcome.status;
     scalars.set(entry.path, outcome.value);
     notify(entry.path, entry.def);
+    if (behaviors) applyBehavior(state, entry.path, outcome.value);
     return "FS_OK";
   };
 
@@ -380,25 +407,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
       return sessionId;
     },
     requests,
-    get(path) {
-      const entry = lookupNode(path);
-      return entry ? scalars.get(entry.path) : undefined;
-    },
-    set(path, value) {
-      const { path: canonical, def } = resolve(path);
-      if (def.type === "list") throw new Error(`${canonical} is a list; use setList`);
-      scalars.set(canonical, toWire(def, value, canonical));
-      notify(canonical, def);
-    },
-    list(path) {
-      return [...(lists.get(resolve(path).path) ?? [])];
-    },
-    setList(path, items) {
-      lists.set(
-        resolve(path).path,
-        items.map((item) => ({ ...item })),
-      );
-    },
+    ...state,
     close() {
       endWaiter(404);
       return new Promise<void>((done) => {

@@ -11,6 +11,9 @@
   "scripts": {
     "muga": "tsx apps/cli/src/main.ts",
     "sim": "tsx apps/cli/src/main.ts sim",
+    "web": "pnpm --filter @muga/web dev",
+    "web:build": "pnpm --filter @muga/web build",
+    "web:preview": "pnpm --filter @muga/web preview",
     "catalog:curate": "tsx tools/curate-catalog.ts",
     "gen": "tsx tools/gen-nodes.ts",
     "gen:check": "tsx tools/gen-nodes.ts --check",
