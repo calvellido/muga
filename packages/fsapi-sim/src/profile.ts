@@ -33,7 +33,8 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.sys.net.wlan.connectedSSID": "MugaNet",
     "netRemote.sys.net.wlan.rssi": 60,
     "netRemote.nav.state": "OFF",
-    "netRemote.nav.status": "READY",
+    // Navigation is off until a controller enables it (nav.state=ON → READY).
+    "netRemote.nav.status": "FAIL",
     "netRemote.nav.caps": 3,
     "netRemote.nav.preset.currentPreset": 0,
     "netRemote.play.info.artist": "",

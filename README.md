@@ -6,12 +6,13 @@ Not affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 ## Status
 
-Phase 1 (protocol core, simulator and CLI) is done. The web app comes next.
+Phase 1 (protocol core, simulator and CLI) and the first hub-less web app (Phase 1b) are done.
 
 | Package | What it is |
 | --- | --- |
 | [`packages/fsapi-core`](packages/fsapi-core) | Typed FSAPI client for browsers and Node: URL building, XML parsing, catalog-based validation, lists, GET/SET_MULTIPLE with fallback, sessions and notifications |
 | [`packages/fsapi-sim`](packages/fsapi-sim) | Simulated radio (HTTP) driven by the node catalog, for tests and hardware-free development |
+| [`apps/web`](apps/web) | The web app: an installable PWA (React) that talks to radios directly from the browser |
 | [`apps/cli`](apps/cli) | `muga` command-line tool |
 | [`data/node-catalog.json`](data/node-catalog.json) | 284 FSAPI nodes (paths, types, flags, enums, list fields): the source for the generated types |
 
@@ -31,6 +32,23 @@ pnpm muga list 127.0.0.1:8099 sys.caps.validModes
 pnpm muga nodes multiroom          # search the catalog offline
 pnpm muga --help
 ```
+
+The web app:
+
+```sh
+pnpm sim                           # terminal 1: simulated radio on 127.0.0.1:8099
+pnpm web                           # terminal 2: http://localhost:5173, then add 127.0.0.1:8099
+pnpm web:build && pnpm web:preview # production build on http://localhost:4173 (installable)
+```
+
+Add a real radio by its IP address (for example `192.0.2.10`) and PIN (usually `1234`). The browser and the radio must be on the same network. The app currently supports:
+
+- now playing, with artwork;
+- play/pause/stop/next/previous, shuffle and repeat, following each radio's capabilities;
+- volume and mute;
+- standby and on;
+- switching source;
+- recalling presets.
 
 Using the library:
 

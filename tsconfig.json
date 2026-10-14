@@ -9,6 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
@@ -22,6 +23,8 @@
     "apps/*/src",
     "apps/*/test",
     "tools",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "apps/web/vite.config.ts",
+    "apps/web/pwa-assets.config.ts"
   ]
 }

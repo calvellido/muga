@@ -41,7 +41,7 @@ export function applyBehavior(state: SimState, path: string, value: number | str
       return;
     }
     case "netRemote.nav.state":
-      state.set("netRemote.nav.status", "READY");
+      state.set("netRemote.nav.status", value === 1 ? "READY" : "FAIL");
       return;
     case "netRemote.nav.action.selectPreset": {
       const preset = state.list("netRemote.nav.presets").find((p) => p.key === value);
