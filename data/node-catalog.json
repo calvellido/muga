@@ -1,0 +1,4771 @@
+{
+  "description": "FSAPI node facts (paths, types, flags, enums, list fields) derived from a static analysis of the UNDOK app. Data only; no vendor code.",
+  "source": {
+    "app": "com.frontier_silicon.fsirc.dok2",
+    "version": "3.3.36",
+    "apkSha256": "6ae294d62d69757dda405992362c6f0d518ac7472386c15186eeddd4ead744fa"
+  },
+  "nodes": [
+    {
+      "path": "netRemote.airplay.clearPassword",
+      "group": "airplay",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 278929408,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CLEAR",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "path": "netRemote.airplay.setPassword",
+      "group": "airplay",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 278925312,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.avs.alarmVolume",
+      "group": "avs",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 283639808,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.avs.authcode",
+      "group": "avs",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 283377664,
+      "registered": true,
+      "maxLength": 1024
+    },
+    {
+      "path": "netRemote.avs.hastoken",
+      "group": "avs",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 283246592,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.avs.locale",
+      "group": "avs",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 283508736,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.avs.logout",
+      "group": "avs",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 283705344,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.avs.metadata",
+      "group": "avs",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 283181056,
+      "registered": true,
+      "maxLength": 1024
+    },
+    {
+      "path": "netRemote.avs.productmetadata",
+      "group": "avs",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 283443200,
+      "registered": true,
+      "maxLength": 1024
+    },
+    {
+      "path": "netRemote.avs.token",
+      "group": "avs",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 283312128,
+      "registered": true,
+      "maxLength": 1024
+    },
+    {
+      "path": "netRemote.avs.validLocales",
+      "group": "avs",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 283574272,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 50
+        },
+        {
+          "name": "code",
+          "type": "c8",
+          "length": 20
+        }
+      ]
+    },
+    {
+      "path": "netRemote.bluetooth.connectedDevices",
+      "group": "bluetooth",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269222400,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "deviceState",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "deviceName",
+          "type": "c8",
+          "length": 65
+        }
+      ]
+    },
+    {
+      "path": "netRemote.bluetooth.connectedDevicesListVersion",
+      "group": "bluetooth",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269222656,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.bluetooth.discoverableState",
+      "group": "bluetooth",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269222144,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "DISCOVERABLE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.cast.appName",
+      "group": "cast",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 281030656,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.cast.tos",
+      "group": "cast",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 281022464,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INACTIVE",
+          "value": 0
+        },
+        {
+          "name": "ACTIVE",
+          "value": 1
+        },
+        {
+          "name": "UNSET",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.cast.usageReport",
+      "group": "cast",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 281026560,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INACTIVE",
+          "value": 0
+        },
+        {
+          "name": "ACTIVE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.cast.version",
+      "group": "cast",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 281034752,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.fsdca.authCode",
+      "group": "fsdca",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 279973888,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.fsdca.clientId",
+      "group": "fsdca",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 279990272,
+      "registered": true,
+      "maxLength": 37
+    },
+    {
+      "path": "netRemote.fsdca.disassociate",
+      "group": "fsdca",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 279986176,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO_REQUEST",
+          "value": 0
+        },
+        {
+          "name": "DISSASOCIATE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.fsdca.fsdcaId",
+      "group": "fsdca",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 279977984,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.fsdca.state",
+      "group": "fsdca",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 279982080,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FSDCA_STATE_INITIAL",
+          "value": 0
+        },
+        {
+          "name": "FSDCA_STATE_NOT_ASSOCIATED",
+          "value": 1
+        },
+        {
+          "name": "FSDCA_STATE_AUTH_IN_PROGRESS",
+          "value": 2
+        },
+        {
+          "name": "FSDCA_STATE_CONNECTING",
+          "value": 3
+        },
+        {
+          "name": "FSDCA_STATE_CONNECTED",
+          "value": 4
+        },
+        {
+          "name": "FSDCA_STATE_WAITING",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "path": "netRemote.misc.fsDebug.component",
+      "group": "misc",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 272761088,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.misc.fsDebug.traceLevel",
+      "group": "misc",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 272761344,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.misc.nvs.data",
+      "group": "misc",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 272699392,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.multichannel.primary.channelmask",
+      "group": "multichannel",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282198272,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NONE",
+          "value": 0
+        },
+        {
+          "name": "LEFT",
+          "value": 1
+        },
+        {
+          "name": "RIGHT",
+          "value": 2
+        },
+        {
+          "name": "STEREO",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multichannel.secondary0.channelmask",
+      "group": "multichannel",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282263808,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NONE",
+          "value": 0
+        },
+        {
+          "name": "LEFT",
+          "value": 1
+        },
+        {
+          "name": "RIGHT",
+          "value": 2
+        },
+        {
+          "name": "STEREO",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multichannel.secondary0.status",
+      "group": "multichannel",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 282264064,
+      "registered": true,
+      "enum": [
+        {
+          "name": "SYNCHRONISING",
+          "value": 0
+        },
+        {
+          "name": "READY",
+          "value": 1
+        },
+        {
+          "name": "INVALID",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multichannel.system.addsecondary",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282133248,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multichannel.system.compatibilityid",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282134272,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multichannel.system.create",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282132736,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multichannel.system.id",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 282134528,
+      "registered": true,
+      "maxLength": 37
+    },
+    {
+      "path": "netRemote.multichannel.system.name",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282134016,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multichannel.system.removesecondary",
+      "group": "multichannel",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282133504,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multichannel.system.state",
+      "group": "multichannel",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 282133760,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INDEPENDENT",
+          "value": 0
+        },
+        {
+          "name": "PRIMARY",
+          "value": 1
+        },
+        {
+          "name": "SECONDARY",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multichannel.system.unpair",
+      "group": "multichannel",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 282132992,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "UNPAIR",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.caps.maxClients",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 278069504,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.caps.protocolVersion",
+      "group": "multiroom",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 278069760,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.multiroom.client.mute0",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278137088,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_MUTE",
+          "value": 0
+        },
+        {
+          "name": "MUTE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.mute1",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278137344,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_MUTE",
+          "value": 0
+        },
+        {
+          "name": "MUTE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.mute2",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278137600,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_MUTE",
+          "value": 0
+        },
+        {
+          "name": "MUTE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.mute3",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278137856,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_MUTE",
+          "value": 0
+        },
+        {
+          "name": "MUTE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.status0",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278135040,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CONNECTED",
+          "value": 0
+        },
+        {
+          "name": "SYNCRONIZING",
+          "value": 1
+        },
+        {
+          "name": "READY_TO_STREAM",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.status1",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278135296,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CONNECTED",
+          "value": 0
+        },
+        {
+          "name": "SYNCRONIZING",
+          "value": 1
+        },
+        {
+          "name": "READY_TO_STREAM",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.status2",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278135552,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CONNECTED",
+          "value": 0
+        },
+        {
+          "name": "SYNCRONIZING",
+          "value": 1
+        },
+        {
+          "name": "READY_TO_STREAM",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.status3",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278135808,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CONNECTED",
+          "value": 0
+        },
+        {
+          "name": "SYNCRONIZING",
+          "value": 1
+        },
+        {
+          "name": "READY_TO_STREAM",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.client.volume0",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278136064,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.client.volume1",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278136320,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.client.volume2",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278136576,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.client.volume3",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278136832,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.device.clientIndex",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278004992,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.device.clientStatus",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278004480,
+      "registered": true,
+      "enum": [
+        {
+          "name": "CONNECTED",
+          "value": 0
+        },
+        {
+          "name": "SYNCRONIZING",
+          "value": 1
+        },
+        {
+          "name": "READY_TO_STREAM",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.device.listAll",
+      "group": "multiroom",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 278004224,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "UDN",
+          "type": "c8",
+          "length": 256
+        },
+        {
+          "name": "FriendlyName",
+          "type": "c8",
+          "length": 256
+        },
+        {
+          "name": "IPAddress",
+          "type": "c8",
+          "length": 16
+        },
+        {
+          "name": "AudioSyncVersion",
+          "type": "c8",
+          "length": 11
+        },
+        {
+          "name": "GroupId",
+          "type": "c8",
+          "length": 37
+        },
+        {
+          "name": "GroupName",
+          "type": "c8",
+          "length": 256
+        },
+        {
+          "name": "GroupRole",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "ClientNumber",
+          "type": "u8",
+          "length": 1
+        },
+        {
+          "name": "SystemId",
+          "type": "c8",
+          "length": 37
+        },
+        {
+          "name": "SystemRole",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "SystemName",
+          "type": "c8",
+          "length": 256
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.device.listAllVersion",
+      "group": "multiroom",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278003968,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.multiroom.device.serverStatus",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278004736,
+      "registered": true,
+      "enum": [
+        {
+          "name": "STREAM_STARTING",
+          "value": 0
+        },
+        {
+          "name": "STREAM_PRESENTABLE",
+          "value": 1
+        },
+        {
+          "name": "STREAM_UNPRESENTABLE",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.device.transportOptimisation",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 278005248,
+      "registered": true,
+      "enum": [
+        {
+          "name": "DISABLED",
+          "value": 0
+        },
+        {
+          "name": "ENABLED",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.group.addClient",
+      "group": "multiroom",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 277939200,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multiroom.group.attachedClients",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277940736,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.group.becomeServer",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277940992,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO_GROUP",
+          "value": 0
+        },
+        {
+          "name": "CLIENT",
+          "value": 1
+        },
+        {
+          "name": "SERVER",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.group.create",
+      "group": "multiroom",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 277938432,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multiroom.group.destroy",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 277938688,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "DESTROY",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.group.id",
+      "group": "multiroom",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277938944,
+      "registered": true,
+      "maxLength": 37
+    },
+    {
+      "path": "netRemote.multiroom.group.masterVolume",
+      "group": "multiroom",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277940224,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.multiroom.group.name",
+      "group": "multiroom",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277939968,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multiroom.group.removeClient",
+      "group": "multiroom",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 277939456,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.multiroom.group.state",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277939712,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO_GROUP",
+          "value": 0
+        },
+        {
+          "name": "CLIENT",
+          "value": 1
+        },
+        {
+          "name": "SERVER",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.group.streamable",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 277940480,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.multiroom.singlegroup.state",
+      "group": "multiroom",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 278200576,
+      "registered": true,
+      "enum": [
+        {
+          "name": "SINGLE",
+          "value": 0
+        },
+        {
+          "name": "MULTIROOM",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.action.context",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270573664,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.action.dabPrune",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270573632,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "PRUNE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.action.dabScan",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270573648,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "SCAN",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.action.navigate",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270573584,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.action.selectItem",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270573600,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.action.selectPreset",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270573616,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.amazonMpGetRating",
+      "group": "nav",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270622720,
+      "registered": false,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.nav.amazonMpLoginComplete",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270618624,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.amazonMpLoginUrl",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270614528,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.nav.amazonMpSetRating",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270626816,
+      "registered": false,
+      "enum": [
+        {
+          "name": "POSITIVE",
+          "value": 0
+        },
+        {
+          "name": "NEGATIVE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.browseMode",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": true,
+      "address": 270577664,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.caps",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270540800,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.context.depth",
+      "group": "nav",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598288,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.nav.context.errorStr",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598176,
+      "registered": true,
+      "maxLength": 128
+    },
+    {
+      "path": "netRemote.nav.context.form.item",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270599937,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "formItemType",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "id",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "description",
+          "type": "c8",
+          "length": 256
+        },
+        {
+          "name": "optionsCount",
+          "type": "u16",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.context.form.option",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270599938,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.context.formData",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598240,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.nav.context.list",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598208,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 766
+        },
+        {
+          "name": "type",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "subType",
+          "type": "e8",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.context.navigate",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598224,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.context.numItems",
+      "group": "nav",
+      "type": "s32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598192,
+      "registered": true,
+      "min": -2147483647,
+      "max": 2147483647
+    },
+    {
+      "path": "netRemote.nav.context.refresh",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270598272,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.context.status",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270598160,
+      "registered": true,
+      "enum": [
+        {
+          "name": "WAITING",
+          "value": 0
+        },
+        {
+          "name": "READY",
+          "value": 1
+        },
+        {
+          "name": "FAIL",
+          "value": 2
+        },
+        {
+          "name": "FATAL_ERR",
+          "value": 3
+        },
+        {
+          "name": "READY_ROOT",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.currentTitle",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270610432,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.nav.dabScanUpdate",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270569472,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.depth",
+      "group": "nav",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270581760,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.nav.description",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270602240,
+      "registered": true,
+      "maxLength": 4097
+    },
+    {
+      "path": "netRemote.nav.encformData",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270585856,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.nav.errorStr",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270548992,
+      "registered": true,
+      "maxLength": 128
+    },
+    {
+      "path": "netRemote.nav.form.button",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271450880,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.form.item",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271450368,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "formItemType",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "id",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "description",
+          "type": "c8",
+          "length": 256
+        },
+        {
+          "name": "optionsCount",
+          "type": "u16",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.form.option",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271450624,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.formData",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270585856,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.nav.list",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270557184,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 766
+        },
+        {
+          "name": "type",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "subType",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "graphicUri",
+          "type": "c8",
+          "length": 766
+        },
+        {
+          "name": "artist",
+          "type": "c8",
+          "length": 766
+        },
+        {
+          "name": "contextMenu",
+          "type": "e8",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.loginComplete",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270618624,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.numItems",
+      "group": "nav",
+      "type": "s32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270553088,
+      "registered": true,
+      "min": -2147483647,
+      "max": 2147483647
+    },
+    {
+      "path": "netRemote.nav.preset.currentPreset",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271386112,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.delete",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385088,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.download.artworkUrl",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385605,
+      "registered": true,
+      "maxLength": 512
+    },
+    {
+      "path": "netRemote.nav.preset.download.blob",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385605,
+      "registered": true,
+      "maxLength": 4096
+    },
+    {
+      "path": "netRemote.nav.preset.download.download",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385601,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.download.name",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385603,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.nav.preset.download.type",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385602,
+      "registered": true,
+      "maxLength": 8
+    },
+    {
+      "path": "netRemote.nav.preset.listversion",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271384832,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.swap.index1",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271396880,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.swap.index2",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271396896,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.swap.swap",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271396912,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.preset.upload.artworkUrl",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385861,
+      "registered": true,
+      "maxLength": 512
+    },
+    {
+      "path": "netRemote.nav.preset.upload.blob",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385861,
+      "registered": true,
+      "maxLength": 4096
+    },
+    {
+      "path": "netRemote.nav.preset.upload.name",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385859,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.nav.preset.upload.type",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385858,
+      "registered": true,
+      "maxLength": 8
+    },
+    {
+      "path": "netRemote.nav.preset.upload.upload",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271385857,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.presets",
+      "group": "nav",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270561280,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "name",
+          "type": "c8",
+          "length": 65
+        },
+        {
+          "name": "type",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "uniqid",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "blob",
+          "type": "c8",
+          "length": 2064
+        },
+        {
+          "name": "artworkUrl",
+          "type": "c8",
+          "length": 512
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.refresh",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270594048,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.releaseDate",
+      "group": "nav",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270606336,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.nav.searchTerm",
+      "group": "nav",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270565376,
+      "registered": true,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.nav.state",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270536704,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.nav.status",
+      "group": "nav",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270544896,
+      "registered": true,
+      "enum": [
+        {
+          "name": "WAITING",
+          "value": 0
+        },
+        {
+          "name": "READY",
+          "value": 1
+        },
+        {
+          "name": "FAIL",
+          "value": 2
+        },
+        {
+          "name": "FATAL_ERR",
+          "value": 3
+        },
+        {
+          "name": "READY_ROOT",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.platform.OEM.colorProduct",
+      "group": "platform",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 273809664,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.platform.OEM.ledIntensity",
+      "group": "platform",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 0,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.platform.OEM.ledIntensitySteps",
+      "group": "platform",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 0,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.platform.softApUpdate.updateModeRequest",
+      "group": "platform",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 273744384,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "START",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.platform.softApUpdate.updateModeStatus",
+      "group": "platform",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 273744128,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "STARTED",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.addPreset",
+      "group": "play",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271638528,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.addPresetStatus",
+      "group": "play",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271650816,
+      "registered": true,
+      "enum": [
+        {
+          "name": "PRESET_STORRED",
+          "value": 0
+        },
+        {
+          "name": "PRESET_NOT_STORRED",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.alerttone",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271654912,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "PLAY",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.caps",
+      "group": "play",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271589376,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.ConcurencyResponse",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271663104,
+      "registered": true,
+      "enum": [
+        {
+          "name": "FALSE",
+          "value": 0
+        },
+        {
+          "name": "TRUE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.ConcurencyStr",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271659008,
+      "registered": true,
+      "maxLength": 2048
+    },
+    {
+      "path": "netRemote.play.control",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271601664,
+      "registered": true,
+      "enum": [
+        {
+          "name": "STOP",
+          "value": 0
+        },
+        {
+          "name": "PLAY",
+          "value": 1
+        },
+        {
+          "name": "PAUSE",
+          "value": 2
+        },
+        {
+          "name": "NEXT",
+          "value": 3
+        },
+        {
+          "name": "PREVIOUS",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.errorStr",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271593472,
+      "registered": true,
+      "maxLength": 128
+    },
+    {
+      "path": "netRemote.play.feedback",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271613952,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "POSITIVE",
+          "value": 1
+        },
+        {
+          "name": "NEGATIVE",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.frequency",
+      "group": "play",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271630336,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.info.album",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597648,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.play.info.albumDescription",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597696,
+      "registered": true,
+      "maxLength": 4096
+    },
+    {
+      "path": "netRemote.play.info.artist",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597632,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.play.info.artistDescription",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597712,
+      "registered": true,
+      "maxLength": 4096
+    },
+    {
+      "path": "netRemote.play.info.description",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597680,
+      "registered": true,
+      "maxLength": 4096
+    },
+    {
+      "path": "netRemote.play.info.duration",
+      "group": "play",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597616,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.info.graphicUri",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597664,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.play.info.name",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271597584,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.play.info.providerLogoUri",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597744,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.play.info.providerName",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271597728,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.play.info.text",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271597600,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.play.NotificationMessage",
+      "group": "play",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271667200,
+      "registered": true,
+      "maxLength": 2048
+    },
+    {
+      "path": "netRemote.play.position",
+      "group": "play",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271609856,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.rate",
+      "group": "play",
+      "type": "s8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271605760,
+      "registered": true,
+      "min": -127,
+      "max": 127
+    },
+    {
+      "path": "netRemote.play.rating",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271654912,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NEUTRAL",
+          "value": 0
+        },
+        {
+          "name": "POSITIVE",
+          "value": 1
+        },
+        {
+          "name": "NEGATIVE",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.repeat",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271622144,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "REPEAT_ALL",
+          "value": 1
+        },
+        {
+          "name": "REPEAT_ONE",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.scrobble",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271626240,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.serviceIds.dabEnsembleId",
+      "group": "play",
+      "type": "u16",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 271642672,
+      "registered": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "path": "netRemote.play.serviceIds.dabScids",
+      "group": "play",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 271642704,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.play.serviceIds.dabServiceId",
+      "group": "play",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 271642688,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.play.serviceIds.ecc",
+      "group": "play",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271642640,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.play.serviceIds.fmRdsPi",
+      "group": "play",
+      "type": "u16",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271642656,
+      "registered": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "path": "netRemote.play.shuffle",
+      "group": "play",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271618048,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.shuffleStatus",
+      "group": "play",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 271646720,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OK",
+          "value": 0
+        },
+        {
+          "name": "SHUFFLING",
+          "value": 1
+        },
+        {
+          "name": "TOO_MANY_ITEMS",
+          "value": 2
+        },
+        {
+          "name": "UNSUPPORTED",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "path": "netRemote.play.signalStrength",
+      "group": "play",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 271634432,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.play.status",
+      "group": "play",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": true,
+      "address": 271585280,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "BUFFERING",
+          "value": 1
+        },
+        {
+          "name": "PLAYING",
+          "value": 2
+        },
+        {
+          "name": "PAUSED",
+          "value": 3
+        },
+        {
+          "name": "REBUFFERING",
+          "value": 4
+        },
+        {
+          "name": "ERROR",
+          "value": 5
+        },
+        {
+          "name": "STOPPED",
+          "value": 6
+        },
+        {
+          "name": "ERROR_POPUP",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "path": "netRemote.spotify.bitRate",
+      "group": "spotify",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274739200,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.spotify.lastError",
+      "group": "spotify",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274747392,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.spotify.loggedInState",
+      "group": "spotify",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274755584,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_LOGGED_IN",
+          "value": 0
+        },
+        {
+          "name": "LOGGED_IN",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.spotify.loginUsingOauthToken",
+      "group": "spotify",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274751488,
+      "registered": true,
+      "maxLength": 2048
+    },
+    {
+      "path": "netRemote.spotify.playlist.name",
+      "group": "spotify",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 274759696,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.spotify.playlist.uri",
+      "group": "spotify",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 274759712,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.spotify.status",
+      "group": "spotify",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274743296,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.spotify.username",
+      "group": "spotify",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 274731008,
+      "registered": true,
+      "maxLength": 33
+    },
+    {
+      "path": "netRemote.sys.alarm.config",
+      "group": "sys",
+      "type": "list",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269530880,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "on",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "time",
+          "type": "c8",
+          "length": 7
+        },
+        {
+          "name": "duration",
+          "type": "u8",
+          "length": 1
+        },
+        {
+          "name": "source",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "preset",
+          "type": "u8",
+          "length": 1
+        },
+        {
+          "name": "repeat",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "date",
+          "type": "c8",
+          "length": 9
+        },
+        {
+          "name": "volume",
+          "type": "u8",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.alarm.configChanged",
+      "group": "sys",
+      "type": "s8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269530624,
+      "registered": true,
+      "min": -127,
+      "max": 127
+    },
+    {
+      "path": "netRemote.sys.alarm.current",
+      "group": "sys",
+      "type": "s8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269529600,
+      "registered": true,
+      "min": -127,
+      "max": 127
+    },
+    {
+      "path": "netRemote.sys.alarm.duration",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269529856,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.alarm.snooze",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269530368,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.alarm.snoozing",
+      "group": "sys",
+      "type": "u16",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269530112,
+      "registered": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "path": "netRemote.sys.alarm.status",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269529344,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "ALARMING",
+          "value": 1
+        },
+        {
+          "name": "SNOOZING",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.audio.airableQuality",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269506048,
+      "registered": true,
+      "enum": [
+        {
+          "name": "LOW",
+          "value": 0
+        },
+        {
+          "name": "NORMAL",
+          "value": 1
+        },
+        {
+          "name": "HIGH",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.audio.eqCustom.param0",
+      "group": "sys",
+      "type": "s16",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505537,
+      "registered": true,
+      "min": -32767,
+      "max": 32767
+    },
+    {
+      "path": "netRemote.sys.audio.eqCustom.param1",
+      "group": "sys",
+      "type": "s16",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505538,
+      "registered": true,
+      "min": -32767,
+      "max": 32767
+    },
+    {
+      "path": "netRemote.sys.audio.eqCustom.param2",
+      "group": "sys",
+      "type": "s16",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505539,
+      "registered": true,
+      "min": -32767,
+      "max": 32767
+    },
+    {
+      "path": "netRemote.sys.audio.eqCustom.param3",
+      "group": "sys",
+      "type": "s16",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505540,
+      "registered": true,
+      "min": -32767,
+      "max": 32767
+    },
+    {
+      "path": "netRemote.sys.audio.eqCustom.param4",
+      "group": "sys",
+      "type": "s16",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505541,
+      "registered": true,
+      "min": -32767,
+      "max": 32767
+    },
+    {
+      "path": "netRemote.sys.audio.eqLoudness",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505792,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.audio.eqPreset",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505280,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.audio.extStaticDelay",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269508352,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.audio.mute",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269505024,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_MUTE",
+          "value": 0
+        },
+        {
+          "name": "MUTE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.audio.quality",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269506304,
+      "registered": true,
+      "enum": [
+        {
+          "name": "LOW",
+          "value": 0
+        },
+        {
+          "name": "NORMAL",
+          "value": 1
+        },
+        {
+          "name": "HIGH",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.audio.volume",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269504768,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.caps.clockSourceList",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269494784,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "source",
+          "type": "c8",
+          "length": 10
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.dabFreqList",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269494016,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "freq",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 8
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.eqBands",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269493248,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "min",
+          "type": "s16",
+          "length": 1
+        },
+        {
+          "name": "max",
+          "type": "s16",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.eqPresets",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269492992,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.extStaticDelayMax",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269494272,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.caps.fmFreqRange.lower",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269493761,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.caps.fmFreqRange.stepSize",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269493763,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.caps.fmFreqRange.upper",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269493762,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.caps.fsdca",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269495040,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.caps.utcSettingsList",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269494528,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "time",
+          "type": "s32",
+          "length": 1
+        },
+        {
+          "name": "region",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.validLang",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269493504,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "langLabel",
+          "type": "c8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.validModes",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269492480,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "id",
+          "type": "c8",
+          "length": 8
+        },
+        {
+          "name": "selectable",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "label",
+          "type": "c8",
+          "length": 32
+        },
+        {
+          "name": "streamable",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "modeType",
+          "type": "e8",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.caps.volumeSteps",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269492736,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.cfg.irAutoPlayFlag",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269533440,
+      "registered": true,
+      "enum": [
+        {
+          "name": "AUTOPLAY_ON",
+          "value": 0
+        },
+        {
+          "name": "AUTOPLAY_OFF",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.clock.dateFormat",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269514496,
+      "registered": true,
+      "enum": [
+        {
+          "name": "DATE_DD_MM_YYYY",
+          "value": 0
+        },
+        {
+          "name": "DATE_MM_DD_YYYY",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.clock.dst",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269513984,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.clock.localDate",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269513216,
+      "registered": true,
+      "maxLength": 11
+    },
+    {
+      "path": "netRemote.sys.clock.localTime",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269513472,
+      "registered": true,
+      "maxLength": 9
+    },
+    {
+      "path": "netRemote.sys.clock.mode",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269514240,
+      "registered": true,
+      "enum": [
+        {
+          "name": "_12_HOUR",
+          "value": 0
+        },
+        {
+          "name": "_24_HOUR",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.clock.source",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269512960,
+      "registered": true,
+      "enum": [
+        {
+          "name": "MANUAL",
+          "value": 0
+        },
+        {
+          "name": "DAB",
+          "value": 1
+        },
+        {
+          "name": "FM",
+          "value": 2
+        },
+        {
+          "name": "SNTP",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.clock.timeZone",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269514752,
+      "registered": true,
+      "maxLength": 33
+    },
+    {
+      "path": "netRemote.sys.clock.utcOffset",
+      "group": "sys",
+      "type": "s32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269513728,
+      "registered": true,
+      "min": -2147483647,
+      "max": 2147483647
+    },
+    {
+      "path": "netRemote.sys.factoryReset",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269537280,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NONE",
+          "value": 0
+        },
+        {
+          "name": "RESET",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.info.activeSession",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488240,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO",
+          "value": 0
+        },
+        {
+          "name": "YES",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.info.buildVersion",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269488304,
+      "registered": true,
+      "maxLength": 12
+    },
+    {
+      "path": "netRemote.sys.info.controllerName",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269488208,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.sys.info.dmruuid",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269488224,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.sys.info.friendlyName",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269488144,
+      "registered": true,
+      "maxLength": 33
+    },
+    {
+      "path": "netRemote.sys.info.modelName",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488256,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.sys.info.netRemoteVendorId",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488272,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.sys.info.radioId",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488176,
+      "registered": true,
+      "maxLength": 18
+    },
+    {
+      "path": "netRemote.sys.info.radioPin",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269488192,
+      "registered": true,
+      "maxLength": 5
+    },
+    {
+      "path": "netRemote.sys.info.radiotest",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269488256,
+      "registered": true,
+      "maxLength": 5
+    },
+    {
+      "path": "netRemote.sys.info.serialNumber",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488288,
+      "registered": true,
+      "maxLength": 65
+    },
+    {
+      "path": "netRemote.sys.info.version",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": true,
+      "address": 269488160,
+      "registered": true,
+      "maxLength": 129
+    },
+    {
+      "path": "netRemote.sys.ipod.dockStatus",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270467328,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_DOCKED",
+          "value": 0
+        },
+        {
+          "name": "DOCKED_STILL_CONNECTING",
+          "value": 1
+        },
+        {
+          "name": "DOCKED_ONLINE_READY",
+          "value": 2
+        },
+        {
+          "name": "DOCKED_UNSUPPORTED_IPOD",
+          "value": 3
+        },
+        {
+          "name": "DOCKED_UNKNOWN_DEVICE",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.isu.control",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269517312,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "UPDATE_FIRMWARE",
+          "value": 1
+        },
+        {
+          "name": "CHECK_FOR_UPDATE",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.isu.mandatory",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269518336,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO",
+          "value": 0
+        },
+        {
+          "name": "YES",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.isu.softwareUpdateProgress",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269518080,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.isu.state",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269517056,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "CHECK_IN_PROGRESS",
+          "value": 1
+        },
+        {
+          "name": "UPDATE_AVAILABLE",
+          "value": 2
+        },
+        {
+          "name": "UPDATE_NOT_AVAILABLE",
+          "value": 3
+        },
+        {
+          "name": "CHECK_FAILED",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.isu.summary",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269517824,
+      "registered": true,
+      "maxLength": 512
+    },
+    {
+      "path": "netRemote.sys.isu.version",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269517568,
+      "registered": true,
+      "maxLength": 99
+    },
+    {
+      "path": "netRemote.sys.lang",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269520896,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.mode",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269500416,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.authorisation.returnUrl",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269510145,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.sys.net.commitChanges",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509888,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO",
+          "value": 0
+        },
+        {
+          "name": "YES",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.address",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509378,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.dhcp",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509377,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO",
+          "value": 0
+        },
+        {
+          "name": "YES",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.dnsPrimary",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509381,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.dnsSecondary",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509382,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.gateway",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509380,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.ipConfig.subnetMask",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509379,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.keepConnected",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509632,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NO",
+          "value": 0
+        },
+        {
+          "name": "YES",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.uap.interfaceEnable",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269510145,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INTERFACE_DISABLE",
+          "value": 0
+        },
+        {
+          "name": "INTERFACE_ENABLE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wired.interfaceEnable",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269508865,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INTERFACE_DISABLE",
+          "value": 0
+        },
+        {
+          "name": "INTERFACE_ENABLE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wired.macAddress",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269508866,
+      "registered": true,
+      "maxLength": 18
+    },
+    {
+      "path": "netRemote.sys.net.wlan.activateProfile",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509145,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.sys.net.wlan.connectedSSID",
+      "group": "sys",
+      "type": "u8array",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509128,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.sys.net.wlan.deactivateProfile",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509152,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.sys.net.wlan.interfaceEnable",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509121,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INTERFACE_DISABLE",
+          "value": 0
+        },
+        {
+          "name": "INTERFACE_ENABLE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.macAddress",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509122,
+      "registered": true,
+      "maxLength": 18
+    },
+    {
+      "path": "netRemote.sys.net.wlan.performFCC",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509139,
+      "registered": true,
+      "enum": [
+        {
+          "name": "TEST_STOP",
+          "value": 0
+        },
+        {
+          "name": "TEST_START",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.performWPS",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269509134,
+      "registered": true,
+      "enum": [
+        {
+          "name": "WPS_IDLE",
+          "value": 0
+        },
+        {
+          "name": "WPS_PBC",
+          "value": 1
+        },
+        {
+          "name": "WPS_PIN",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.profiles",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509142,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "ssid",
+          "type": "u8",
+          "length": 32
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.region",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509123,
+      "registered": true,
+      "enum": [
+        {
+          "name": "INVALID",
+          "value": 0
+        },
+        {
+          "name": "USA",
+          "value": 1
+        },
+        {
+          "name": "CANADA",
+          "value": 2
+        },
+        {
+          "name": "EUROPE",
+          "value": 3
+        },
+        {
+          "name": "SPAIN",
+          "value": 4
+        },
+        {
+          "name": "FRANCE",
+          "value": 5
+        },
+        {
+          "name": "JAPAN",
+          "value": 6
+        },
+        {
+          "name": "AUSTRALIA",
+          "value": 7
+        },
+        {
+          "name": "Reserved8",
+          "value": 8
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.regionFcc",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509141,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NOT_ACTIVE",
+          "value": 0
+        },
+        {
+          "name": "ACTIVE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.removeProfile",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509144,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.sys.net.wlan.rssi",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509132,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.net.wlan.scan",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 269509124,
+      "registered": true,
+      "enum": [
+        {
+          "name": "IDLE",
+          "value": 0
+        },
+        {
+          "name": "SCAN",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.scanList",
+      "group": "sys",
+      "type": "list",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509125,
+      "registered": true,
+      "fields": [
+        {
+          "name": "key",
+          "type": "u32",
+          "length": 1
+        },
+        {
+          "name": "ssid",
+          "type": "u8",
+          "length": 32
+        },
+        {
+          "name": "privacy",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "wpsCapability",
+          "type": "e8",
+          "length": 1
+        },
+        {
+          "name": "rssi",
+          "type": "u8",
+          "length": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.selectAP",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509127,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.wlan.selectProfile",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509143,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setAuthType",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509131,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OPEN",
+          "value": 0
+        },
+        {
+          "name": "PSK",
+          "value": 1
+        },
+        {
+          "name": "WPA",
+          "value": 2
+        },
+        {
+          "name": "WPA2",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setEncType",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509130,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NONE",
+          "value": 0
+        },
+        {
+          "name": "WEP",
+          "value": 1
+        },
+        {
+          "name": "TKIP",
+          "value": 2
+        },
+        {
+          "name": "AES",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setFccTestChanNum",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509135,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setFccTestDataRate",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509136,
+      "registered": true,
+      "enum": [
+        {
+          "name": "_1M",
+          "value": 0
+        },
+        {
+          "name": "_2M",
+          "value": 1
+        },
+        {
+          "name": "_5_5M",
+          "value": 2
+        },
+        {
+          "name": "_11M",
+          "value": 3
+        },
+        {
+          "name": "_22M",
+          "value": 4
+        },
+        {
+          "name": "_6M",
+          "value": 5
+        },
+        {
+          "name": "_9M",
+          "value": 6
+        },
+        {
+          "name": "_12M",
+          "value": 7
+        },
+        {
+          "name": "_18M",
+          "value": 8
+        },
+        {
+          "name": "_24M",
+          "value": 9
+        },
+        {
+          "name": "_36M",
+          "value": 10
+        },
+        {
+          "name": "_48M",
+          "value": 11
+        },
+        {
+          "name": "_54M",
+          "value": 12
+        },
+        {
+          "name": "_72M",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setFccTestTxDataPattern",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509137,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setFccTestTxPower",
+      "group": "sys",
+      "type": "u8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509138,
+      "registered": true,
+      "min": 0,
+      "max": 255
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setFccTxOff",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509140,
+      "registered": true,
+      "enum": [
+        {
+          "name": "TX_ON",
+          "value": 0
+        },
+        {
+          "name": "TX_OFF",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setPassphrase",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509126,
+      "registered": true,
+      "maxLength": 257
+    },
+    {
+      "path": "netRemote.sys.net.wlan.setSSID",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509129,
+      "registered": true,
+      "maxLength": 32
+    },
+    {
+      "path": "netRemote.sys.net.wlan.wpsPinRead",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269509133,
+      "registered": true,
+      "maxLength": 9
+    },
+    {
+      "path": "netRemote.sys.power",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": true,
+      "address": 269496320,
+      "registered": true,
+      "enum": [
+        {
+          "name": "OFF",
+          "value": 0
+        },
+        {
+          "name": "ON",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.rsa.publicKey",
+      "group": "sys",
+      "type": "c8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269525504,
+      "registered": true,
+      "maxLength": 512
+    },
+    {
+      "path": "netRemote.sys.rsa.status",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": true,
+      "notifying": false,
+      "cacheable": false,
+      "address": 269525248,
+      "registered": true,
+      "enum": [
+        {
+          "name": "GENERATION_IN_PROGRESS",
+          "value": 0
+        },
+        {
+          "name": "KEY_AVAILABLE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.sys.sleep",
+      "group": "sys",
+      "type": "u32",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 270401536,
+      "registered": true,
+      "min": 0,
+      "max": 4294967295
+    },
+    {
+      "path": "netRemote.sys.state",
+      "group": "sys",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": true,
+      "cacheable": false,
+      "address": 270008320,
+      "registered": true,
+      "enum": [
+        {
+          "name": "NORMAL_MODE",
+          "value": 0
+        },
+        {
+          "name": "SAPU_MODE",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "path": "netRemote.test.iperf.commandLine",
+      "group": "test",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 275841280,
+      "registered": false,
+      "maxLength": 256
+    },
+    {
+      "path": "netRemote.test.iperf.console",
+      "group": "test",
+      "type": "c8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 275841792,
+      "registered": false,
+      "maxLength": 512
+    },
+    {
+      "path": "netRemote.test.iperf.execute",
+      "group": "test",
+      "type": "e8",
+      "readOnly": false,
+      "notifying": false,
+      "cacheable": false,
+      "address": 275841536,
+      "registered": false,
+      "enum": [
+        {
+          "name": "STOP",
+          "value": 0
+        },
+        {
+          "name": "START",
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

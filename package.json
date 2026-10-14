@@ -1,0 +1,31 @@
+{
+  "name": "muga",
+  "private": true,
+  "type": "module",
+  "description": "Muga: a web controller for Frontier Silicon FSAPI internet radios",
+  "license": "MIT",
+  "packageManager": "pnpm@10.16.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "muga": "tsx apps/cli/src/main.ts",
+    "sim": "tsx apps/cli/src/main.ts sim",
+    "catalog:curate": "tsx tools/curate-catalog.ts",
+    "gen": "tsx tools/gen-nodes.ts",
+    "gen:check": "tsx tools/gen-nodes.ts --check",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm gen:check && pnpm typecheck && pnpm lint && pnpm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^22",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

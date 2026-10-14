@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+# Never commit vendor binaries or decompiled material (see README).
+*.apk
+*.isu.bin

@@ -1,0 +1,12 @@
+{
+  "name": "@muga/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Command-line FSAPI tool: read/write nodes, list, watch notifications, run the simulator",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@muga/fsapi-core": "workspace:*",
+    "@muga/fsapi-sim": "workspace:*"
+  }
+}
