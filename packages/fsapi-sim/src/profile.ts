@@ -24,7 +24,8 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.sys.caps.volumeSteps": 33,
     "netRemote.sys.audio.mute": "NOT_MUTE",
     "netRemote.play.status": "PLAYING",
-    "netRemote.play.caps": 0,
+    // Pause, Stop, SkipNext, SkipPrevious, Shuffle, Repeat, AddPreset (doc 05 §2.1).
+    "netRemote.play.caps": 0x1 | 0x2 | 0x4 | 0x8 | 0x40 | 0x80 | 0x800,
     "netRemote.play.info.name": "Radio Muga",
     "netRemote.play.info.text": "Simulated broadcast",
     "netRemote.play.repeat": "OFF",
@@ -33,6 +34,13 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.sys.net.wlan.rssi": 60,
     "netRemote.nav.state": "OFF",
     "netRemote.nav.status": "READY",
+    "netRemote.nav.caps": 3,
+    "netRemote.nav.preset.currentPreset": 0,
+    "netRemote.play.info.artist": "",
+    "netRemote.play.info.album": "",
+    "netRemote.play.info.graphicUri": "",
+    "netRemote.play.info.duration": 0,
+    "netRemote.play.position": 0,
   },
   lists: {
     "netRemote.sys.caps.validModes": [
