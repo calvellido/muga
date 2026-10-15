@@ -212,9 +212,9 @@ describe("App", () => {
     await user.type(screen.getByLabelText("IP address"), living.host);
     await user.click(screen.getByRole("button", { name: "Add speaker" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Living room" })).toBeTruthy();
-    await user.click(await screen.findByRole("button", { name: "Add Kitchen" }));
+    await user.click(await screen.findByRole("button", { name: "Add Kitchen to Muga" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
-    expect(await screen.findByRole("button", { name: "Add Bedroom" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Add Bedroom to Muga" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /^Living room/ }));
     await user.click(
