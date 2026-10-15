@@ -7,6 +7,8 @@ export interface SimState {
   set(path: string, value: number | string): void;
   list(path: string): SimListItem[];
   setList(path: string, items: SimListItem[]): void;
+  /** Blocked nodes answer FS_NODE_BLOCKED to reads. */
+  setBlocked(paths: readonly string[], blocked: boolean): void;
 }
 
 export interface BehaviorOptions {
@@ -23,8 +25,15 @@ export interface Behaviors {
 }
 
 const NO_PRESET = 0xffff_ffff;
-// nav.caps bits: navigation, presets.
-const NAV_CAPS_ANY = 0x3;
+const NAV_CAP_NAVIGATION = 0x1;
+/** Read while navigation is off, a real radio (ICD2018) answers FS_NODE_BLOCKED for these. */
+const NAV_NODES = [
+  "netRemote.nav.status",
+  "netRemote.nav.list",
+  "netRemote.nav.presets",
+  "netRemote.nav.numItems",
+  "netRemote.nav.depth",
+];
 
 function itemType(item: SimMenuItem): keyof typeof NavItemType {
   return item.type ?? (item.children ? "Directory" : "PlayableItem");
@@ -45,8 +54,11 @@ function slug(name: string): string {
 
 /**
  * Approximates what a real radio does after a SET, so apps built against the simulator see
- * plausible changes. Includes a menu model for `nav.*`: one position per radio, reset by
- * `nav.state`, moved by `nav.action.navigate`, and lost on source changes and standby.
+ * plausible changes. Includes a menu model for `nav.*`, after an ICD2018 (V2.13.21c):
+ * - one position per radio, reset by `nav.state`, moved by `nav.action.navigate`;
+ * - while `nav.state` is OFF (also after a source change or standby), the nav nodes are blocked;
+ * - a source without a menu (no `nav.caps` navigation bit, or an empty top level) reports
+ *   FATAL_ERR, but its presets can still be read.
  */
 export function createBehaviors(state: SimState, options: BehaviorOptions): Behaviors {
   /** The list shown at each depth; empty while navigation is off. */
@@ -94,12 +106,24 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
     state.set("netRemote.nav.numItems", 0);
     state.set("netRemote.nav.depth", 0);
     state.set("netRemote.nav.status", "FAIL");
+    // A source change turns navigation off on a real radio, too.
+    state.set("netRemote.nav.state", "OFF");
+    state.setBlocked(NAV_NODES, true);
   };
 
   const navOn = () => {
+    state.setBlocked(NAV_NODES, false);
     const caps = Number(state.get("netRemote.nav.caps") ?? 0);
-    if ((caps & NAV_CAPS_ANY) === 0) return navOff();
-    stack = [currentMode()?.menu ?? []];
+    const menu = currentMode()?.menu ?? [];
+    if ((caps & NAV_CAP_NAVIGATION) === 0 || menu.length === 0) {
+      generation++;
+      stack = [];
+      state.setList("netRemote.nav.list", []);
+      state.set("netRemote.nav.numItems", -1);
+      state.set("netRemote.nav.status", "FATAL_ERR");
+      return;
+    }
+    stack = [menu];
     publish();
   };
 
@@ -145,6 +169,9 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
     state.set("netRemote.nav.preset.currentPreset", NO_PRESET);
     return undefined;
   };
+
+  if (state.get("netRemote.nav.state") === 1) navOn();
+  else navOff();
 
   return {
     apply(path, value) {

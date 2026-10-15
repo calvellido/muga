@@ -56,21 +56,38 @@ export interface NavInfo {
 
 type ReadyStatus = "READY" | "READY_ROOT";
 
+/**
+ * Where `nav.status` settled. "OFF": the radio answers FS_NODE_BLOCKED because navigation is
+ * off (seen on an ICD2018, V2.13.21c, whenever `nav.state` is OFF, including in standby).
+ */
+export type SettledNavStatus = ReadyStatus | "FAIL" | "FATAL_ERR" | "OFF";
+
 const STATUS_NODE = "netRemote.nav.status";
-/** Right after `nav.state=ON`, some firmware may still report the previous FAIL for a moment. */
-const ENABLE_GRACE_MS = 2_000;
+/** First polls come quickly: a radio usually settles in a few hundred ms. */
+const FIRST_POLL_MS = 100;
 
 function isReady(status: unknown): status is ReadyStatus {
   return status === "READY" || status === "READY_ROOT";
 }
 
-function isFailed(status: unknown): boolean {
-  return status === "FAIL" || status === "FATAL_ERR";
+/** `nav.status` ended up somewhere other than READY / READY_ROOT, or never settled. */
+export class NavFailure extends FsapiError {
+  readonly navStatus: SettledNavStatus | "TIMEOUT";
+
+  constructor(navStatus: SettledNavStatus | "TIMEOUT") {
+    super(
+      navStatus === "TIMEOUT" ? "timeout" : "status",
+      navStatus === "TIMEOUT"
+        ? "Navigation did not become ready"
+        : `Navigation failed (${navStatus})`,
+      { node: STATUS_NODE },
+    );
+    this.navStatus = navStatus;
+  }
 }
 
-/** True for errors raised because `nav.status` reported FAIL / FATAL_ERR or never became ready. */
-export function isNavFailure(error: unknown): error is FsapiError {
-  return isFsapiError(error) && error.node === STATUS_NODE;
+export function isNavFailure(error: unknown): error is NavFailure {
+  return error instanceof NavFailure;
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -93,45 +110,65 @@ function request(options: NavOptions): RequestOptions {
   return options.signal ? { signal: options.signal } : {};
 }
 
-/**
- * Polls `nav.status` until READY or READY_ROOT. FAIL / FATAL_ERR end the wait, unless they are
- * seen within `graceMs` of the start.
- */
-export async function waitForNav(
+async function readStatus(
   client: FsapiClient,
-  options: NavOptions & { graceMs?: number } = {},
-): Promise<ReadyStatus> {
-  const pollMs = options.pollMs ?? 500;
-  const timeoutMs = options.timeoutMs ?? 30_000;
-  const graceMs = options.graceMs ?? 0;
-  const start = Date.now();
-  for (;;) {
+  options: NavOptions,
+): Promise<SettledNavStatus | "WAITING"> {
+  try {
     const status = await client.get(STATUS_NODE, request(options));
-    if (isReady(status)) return status;
-    const elapsed = Date.now() - start;
-    if (isFailed(status) && elapsed >= graceMs) {
-      throw new FsapiError("status", `Navigation failed (${status})`, { node: STATUS_NODE });
-    }
-    if (elapsed >= timeoutMs) {
-      throw new FsapiError("timeout", "Navigation did not become ready", { node: STATUS_NODE });
-    }
-    await sleep(pollMs, options.signal);
+    return typeof status === "string" ? status : "FAIL";
+  } catch (error) {
+    if (isFsapiError(error, "status") && error.fsStatus === "FS_NODE_BLOCKED") return "OFF";
+    throw error;
   }
 }
 
-/** Ready as it is, or turns navigation on (`nav.state=ON`) and waits. Keeps the menu position. */
-export async function ensureNavReady(client: FsapiClient, options: NavOptions = {}): Promise<void> {
-  const status = await client.get(STATUS_NODE, request(options));
-  if (isReady(status)) return;
+/** Polls `nav.status` while it reads WAITING and returns where it settled. Never throws for FAIL. */
+export async function settleNav(
+  client: FsapiClient,
+  options: NavOptions = {},
+): Promise<SettledNavStatus> {
+  const pollMs = options.pollMs ?? 500;
+  const timeoutMs = options.timeoutMs ?? 30_000;
+  const start = Date.now();
+  for (let attempt = 0; ; attempt++) {
+    const status = await readStatus(client, options);
+    if (status !== "WAITING") return status;
+    if (Date.now() - start >= timeoutMs) throw new NavFailure("TIMEOUT");
+    await sleep(Math.min(pollMs, FIRST_POLL_MS * 2 ** attempt), options.signal);
+  }
+}
+
+/** Waits until the menu is ready; anything else is a {@link NavFailure}. */
+export async function waitForNav(
+  client: FsapiClient,
+  options: NavOptions = {},
+): Promise<ReadyStatus> {
+  const status = await settleNav(client, options);
+  if (isReady(status)) return status;
+  throw new NavFailure(status);
+}
+
+/**
+ * Turns navigation on unless it's ready or busy, then waits while WAITING, like UNDOK's
+ * ensureNavReady. Keeps the menu position. Returns where the status settled without throwing:
+ * a source without a menu reports FATAL_ERR, yet its presets can still be read.
+ */
+export async function enableNav(
+  client: FsapiClient,
+  options: NavOptions = {},
+): Promise<SettledNavStatus> {
+  const status = await readStatus(client, options);
+  if (isReady(status)) return status;
   if (status !== "WAITING") await client.set("netRemote.nav.state", "ON", request(options));
-  await waitForNav(client, { ...options, graceMs: ENABLE_GRACE_MS });
+  return settleNav(client, options);
 }
 
 /** `nav.state` OFF then ON: back to the current source's top menu. */
 export async function resetNav(client: FsapiClient, options: NavOptions = {}): Promise<void> {
   await client.set("netRemote.nav.state", "OFF", request(options));
   await client.set("netRemote.nav.state", "ON", request(options));
-  await waitForNav(client, { ...options, graceMs: ENABLE_GRACE_MS });
+  await waitForNav(client, options);
 }
 
 /** Opens a Directory item, or goes up with {@link NAV_UP}. */

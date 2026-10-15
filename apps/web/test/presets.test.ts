@@ -19,6 +19,26 @@ describe("PresetManager", () => {
     });
   });
 
+  it("reads presets of a source without a menu, and trims padded names", async () => {
+    const { controller } = await setup({
+      sim: {
+        profile: {
+          lists: {
+            "netRemote.nav.presets": [
+              { key: 0, name: " 90.80MHz", type: "" },
+              { key: 1, name: "", type: "" },
+            ],
+          },
+        },
+      },
+    });
+    await controller.setMode(4); // FM: nav.status settles on FATAL_ERR
+    await controller.refreshNow();
+    await controller.presets.load();
+    expect(controller.getSnapshot().presets.status).toBe("ready");
+    expect(names(controller)).toEqual(["90.80MHz", ""]);
+  });
+
   it("stores what's playing into a slot", async () => {
     const { sim, controller } = await setup();
     await controller.presets.load();

@@ -35,10 +35,11 @@ export function Browse({ snapshot, controller }: Props) {
       break;
     case "unsupported":
       return <p className="muted">{t("browse.unsupported")}</p>;
+    case "unavailable":
     case "error":
       return (
         <div className="muted">
-          <p>{t("browse.error")}</p>
+          <p>{t(browse.status === "unavailable" ? "browse.unavailable" : "browse.error")}</p>
           <button
             type="button"
             className="button button--ghost"

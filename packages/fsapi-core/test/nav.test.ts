@@ -1,23 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { FsapiClient } from "../src/client.ts";
-import { ensureNavReady, isNavFailure, selectNavItem, waitForNav } from "../src/nav.ts";
+import { enableNav, isNavFailure, selectNavItem, waitForNav } from "../src/nav.ts";
 import type { FetchLike } from "../src/types.ts";
 
 const reply = (status: string, inner = "") =>
   `<fsapiResponse><status>${status}</status>${inner}</fsapiResponse>`;
 const navStatus = (value: number) => reply("FS_OK", `<value><u8>${value}</u8></value>`);
 
-/** Answers GET nav.status from `statuses` (the last one repeats) and SETs from `sets`. */
-function radio(statuses: number[], sets: string[] = []) {
+/**
+ * Answers GET nav.status from `statuses` (the last one repeats; "blocked" answers
+ * FS_NODE_BLOCKED, as a radio does while navigation is off) and SETs from `sets`.
+ */
+function radio(statuses: (number | "blocked")[], sets: string[] = []) {
   const calls: string[] = [];
   const fetch: FetchLike = async (raw) => {
     const url = new URL(raw);
     const [, , verb, node] = url.pathname.split("/");
     calls.push(`${verb} ${node}${verb === "SET" ? `=${url.searchParams.get("value")}` : ""}`);
+    const status = statuses.length > 1 ? statuses.shift() : statuses[0];
     const body =
-      verb === "GET"
-        ? navStatus(statuses.length > 1 ? (statuses.shift() as number) : (statuses[0] ?? 2))
-        : reply(sets.shift() ?? "FS_OK");
+      verb !== "GET"
+        ? reply(sets.shift() ?? "FS_OK")
+        : status === "blocked"
+          ? reply("FS_NODE_BLOCKED")
+          : navStatus(status ?? 2);
     return { status: 200, text: async () => body };
   };
   return { client: new FsapiClient({ host: "192.0.2.10", fetch }), calls };
@@ -39,13 +45,24 @@ describe("nav helpers", () => {
 
   it("turns navigation on only when it isn't ready or busy", async () => {
     const ready = radio([4]);
-    await ensureNavReady(ready.client, FAST);
+    await expect(enableNav(ready.client, FAST)).resolves.toBe("READY_ROOT");
     expect(ready.calls).toEqual(["GET netRemote.nav.status"]);
 
-    // A FAIL right after nav.state=ON is tolerated briefly.
-    const off = radio([2, 2, 0, 1]);
-    await ensureNavReady(off.client, FAST);
-    expect(off.calls).toContain("SET netRemote.nav.state=1");
+    const busy = radio([0, 1]);
+    await enableNav(busy.client, FAST);
+    expect(busy.calls).not.toContain("SET netRemote.nav.state=1");
+  });
+
+  it("treats a blocked nav.status as navigation being off", async () => {
+    const { client, calls } = radio(["blocked", 0, 1]);
+    await expect(enableNav(client, FAST)).resolves.toBe("READY");
+    expect(calls).toContain("SET netRemote.nav.state=1");
+  });
+
+  it("reports where navigation settled without throwing", async () => {
+    // A source without a menu (FM on an ICD2018) settles on FATAL_ERR; presets still work.
+    const { client } = radio(["blocked", 3]);
+    await expect(enableNav(client, FAST)).resolves.toBe("FATAL_ERR");
   });
 
   it("retries selectItem once on FS_TRY_AGAIN", async () => {

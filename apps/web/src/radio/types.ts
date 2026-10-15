@@ -51,7 +51,8 @@ export type BrowseCrumb =
   | { kind: "search"; key: number; term: string };
 
 export interface BrowseState {
-  status: "idle" | "loading" | "ready" | "unsupported" | "error";
+  /** unsupported: the source has no menu (`nav.caps`); unavailable: its menu didn't open. */
+  status: "idle" | "loading" | "ready" | "unsupported" | "unavailable" | "error";
   /** Source the menu belongs to. */
   modeKey: number | undefined;
   path: BrowseCrumb[];

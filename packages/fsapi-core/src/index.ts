@@ -40,10 +40,11 @@ export {
 } from "./errors.ts";
 export { NODE_DEFS } from "./generated/nodes.ts";
 export {
-  ensureNavReady,
+  enableNav,
   isNavFailure,
   NAV_PAGE_SIZE,
   NAV_UP,
+  NavFailure,
   type NavInfo,
   NavItemSubType,
   NavItemType,
@@ -53,8 +54,10 @@ export {
   readNavInfo,
   readNavPage,
   resetNav,
+  type SettledNavStatus,
   searchNav,
   selectNavItem,
+  settleNav,
   waitForNav,
 } from "./nav.ts";
 export { NotificationSession, type NotificationSessionOptions } from "./notifications.ts";

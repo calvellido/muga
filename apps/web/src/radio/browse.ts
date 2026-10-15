@@ -95,7 +95,7 @@ export class BrowseSession {
         write({ ...initialBrowse(), status: "unsupported", modeKey });
         return;
       }
-      const path = this.state.modeKey === modeKey ? this.state.path : [];
+      let path = this.state.modeKey === modeKey ? this.state.path : [];
       write({
         ...(path.length ? {} : initialBrowse()),
         status: "loading",
@@ -104,17 +104,25 @@ export class BrowseSession {
         busy: true,
       });
       try {
-        await this.replay(path);
+        try {
+          await this.replay(path);
+        } catch (error) {
+          // The place we were may be gone (e.g. a rescanned station list): start at the top.
+          if (!recoverable(error) || path.length === 0) throw error;
+          path = [];
+          await this.replay(path);
+        }
         await this.showLevel(path, write);
       } catch (error) {
         if (error instanceof Superseded) throw error;
-        const unsupported = isNavFailure(error) && navCaps === undefined && path.length === 0;
+        // The top menu itself failed to open: DAB before any scan reports FATAL_ERR, for example.
+        const unavailable = isNavFailure(error);
         write({
-          status: unsupported ? "unsupported" : "error",
+          status: unavailable ? "unavailable" : "error",
           busy: false,
           pendingKey: undefined,
         });
-        if (!unsupported && !isNavFailure(error)) this.ctx.fail("browse", error);
+        if (!unavailable) this.ctx.fail("browse", error);
       }
     }).finally(() => {
       if (this.opening?.done === done) this.opening = undefined;
@@ -154,12 +162,13 @@ export class BrowseSession {
     });
   }
 
-  /** Up one level. Leaving search results rebuilds the level, as UNDOK does. */
+  /**
+   * Up one level, out of folders and search results alike: an ICD2018 leaves search results in
+   * one step, where UNDOK rebuilds the level. If the radio refuses, the level is rebuilt.
+   */
   back(): Promise<void> {
     const path = this.state.path;
-    const last = path.at(-1);
-    if (!last) return Promise.resolve();
-    if (last.kind === "search") return this.goTo(path.length - 1);
+    if (path.length === 0) return Promise.resolve();
     return this.step("browse", undefined, async (write) => {
       const parent = path.slice(0, -1);
       try {

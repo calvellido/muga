@@ -1,4 +1,4 @@
-import { ensureNavReady, isFsapiError } from "@muga/fsapi-core";
+import { enableNav, isFsapiError } from "@muga/fsapi-core";
 import { hasCap, NavCap, PlayCap } from "./caps.ts";
 import type { Preset, PresetsState, RadioContext, RadioSnapshot } from "./types.ts";
 
@@ -145,9 +145,15 @@ export class PresetManager {
     return "";
   }
 
+  /**
+   * The list is blocked (FS_NODE_BLOCKED) until navigation is on. It can be read whatever
+   * `nav.status` settles on: FM on an ICD2018 reports FATAL_ERR and still lists its presets.
+   */
   private async read(): Promise<Preset[]> {
-    await ensureNavReady(this.ctx.client, this.ctx.nav);
-    return this.ctx.client.listAllItems("netRemote.nav.presets", { pageSize: 30 });
+    await enableNav(this.ctx.client, this.ctx.nav);
+    const items = await this.ctx.client.listAllItems("netRemote.nav.presets", { pageSize: 30 });
+    // Some radios pad names (FM presets read " 90.80MHz").
+    return items.map((p) => ({ ...p, name: p.name.trim() }));
   }
 
   /** Re-reads the list; radios can take a moment to show a change, so retry a few times. */

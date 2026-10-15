@@ -71,6 +71,7 @@
   "browse.loading": "Loading the menu…",
   "browse.standby": "Turn the radio on to browse.",
   "browse.unsupported": "This source has no menu to browse.",
+  "browse.unavailable": "There's nothing to browse on this source right now.",
   "browse.error": "Couldn't load the menu.",
   "browse.retry": "Try again",
   "browse.empty": "This folder is empty.",

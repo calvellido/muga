@@ -185,7 +185,7 @@ async function browse(host?: string, keys: string[] = []) {
   let startKey = -1;
   while (items.length < limit) {
     const page = await readNavPage(radio, startKey);
-    items.push(...page.items);
+    items.push(...page.items.slice(0, limit - items.length));
     const last = page.items.at(-1);
     if (page.listEnd || !last || page.items.length < NAV_PAGE_SIZE) break;
     startKey = last.key;

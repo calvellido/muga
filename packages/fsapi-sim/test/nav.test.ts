@@ -1,5 +1,5 @@
 import {
-  ensureNavReady,
+  enableNav,
   FsapiClient,
   isNavFailure,
   NAV_UP,
@@ -33,7 +33,10 @@ const names = (items: readonly { name: string }[]) => items.map((i) => i.name);
 describe("menu navigation (nav.*) against the simulator", () => {
   it("turns navigation on and lists the source's top menu", async () => {
     const { sim, client } = await setup();
-    await ensureNavReady(client, FAST);
+    await expect(client.get("netRemote.nav.status")).rejects.toMatchObject({
+      fsStatus: "FS_NODE_BLOCKED",
+    });
+    await expect(enableNav(client, FAST)).resolves.toBe("READY_ROOT");
     expect(sim.get("netRemote.nav.state")).toBe(1);
     const page = await readNavPage(client);
     expect(names(page.items)).toEqual(["Search", "Local stations", "Genres", "Podcasts"]);
@@ -100,15 +103,19 @@ describe("menu navigation (nav.*) against the simulator", () => {
     const { sim, client } = await setup();
     await resetNav(client, FAST);
     await client.set("netRemote.sys.mode", 3); // DAB
-    expect(sim.get("netRemote.nav.status")).toBe(2); // FAIL
-    await ensureNavReady(client, FAST);
+    expect(sim.get("netRemote.nav.state")).toBe(0);
+    await expect(readNavPage(client)).rejects.toMatchObject({ fsStatus: "FS_NODE_BLOCKED" });
+    await enableNav(client, FAST);
     expect((await readNavPage(client)).items[0]?.name).toBe("Atlantic Hits");
   });
 
-  it("reports a navigation failure when the source has no menu", async () => {
+  it("reports FATAL_ERR for a source without a menu, but still lists its presets", async () => {
     const { client } = await setup();
-    await client.set("netRemote.sys.mode", 1); // Spotify
-    const error = await ensureNavReady(client, { ...FAST, timeoutMs: 50 }).catch((e) => e);
+    await client.set("netRemote.sys.mode", 4); // FM: presets, no menu
+    await expect(enableNav(client, FAST)).resolves.toBe("FATAL_ERR");
+    const presets = await client.listAllItems("netRemote.nav.presets");
+    expect(presets[0]?.name).toBe("Radio Muga");
+    const error = await resetNav(client, FAST).catch((e: unknown) => e);
     expect(isNavFailure(error)).toBe(true);
   });
 });

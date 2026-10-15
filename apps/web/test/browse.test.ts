@@ -60,18 +60,22 @@ describe("BrowseSession", () => {
     expect(controller.getSnapshot().play.name).toBe("Harbour Talk");
   });
 
-  it("searches, and leaving the results rebuilds the level", async () => {
-    const { controller } = await setup();
+  it("searches, and goes up from the results in one step", async () => {
+    const { sim, controller } = await setup();
     await controller.browse.open();
     await controller.browse.search("lounge 2");
     let browse = controller.getSnapshot().browse;
     expect(browse.path).toEqual([{ kind: "search", key: 0, term: "lounge 2" }]);
     expect(names(controller)).toContain("Jazz Lounge 20");
 
+    const resets = () =>
+      sim.requests.filter((r) => r.verb === "SET" && r.node === "netRemote.nav.state").length;
+    const before = resets();
     await controller.browse.back();
     browse = controller.getSnapshot().browse;
     expect(browse.path).toEqual([]);
     expect(browse.searchKey).toBe(0);
+    expect(resets()).toBe(before);
   });
 
   it("rebuilds its place when the radio's menu was turned off elsewhere", async () => {
@@ -104,6 +108,15 @@ describe("BrowseSession", () => {
     expect(controller.getSnapshot().navCaps).toBe(0);
     await controller.browse.open();
     expect(controller.getSnapshot().browse.status).toBe("unsupported");
+  });
+
+  it("says when a source's menu doesn't open (DAB before a scan)", async () => {
+    const { controller } = await setup({ sim: { profile: { modes: { DAB: { menu: [] } } } } });
+    await controller.setMode(3);
+    await controller.refreshNow();
+    await controller.browse.open();
+    expect(controller.getSnapshot().browse.status).toBe("unavailable");
+    expect(controller.getSnapshot().lastError).toBeUndefined();
   });
 
   it("shows only the latest source's menu when the source changes mid-step", async () => {

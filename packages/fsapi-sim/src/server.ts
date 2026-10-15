@@ -186,6 +186,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     );
   }
   const missing = new Set(profile.missingNodes.map((p) => resolve(p).path));
+  const blocked = new Set<NodePath>();
 
   let sessionId: string | undefined;
   const pending = new Map<NodePath, string>();
@@ -236,20 +237,28 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
         items.map((item) => ({ ...item })),
       );
     },
+    setBlocked(paths, isBlocked) {
+      for (const path of paths) {
+        if (isBlocked) blocked.add(resolve(path).path);
+        else blocked.delete(resolve(path).path);
+      }
+    },
   };
 
   const timers = new Set<NodeJS.Timeout>();
-  const behaviors = createBehaviors(state, {
-    modes: profile.modes,
-    navDelayMs: options.navDelayMs ?? 0,
-    later(ms, fn) {
-      const timer = setTimeout(() => {
-        timers.delete(timer);
-        fn();
-      }, ms);
-      timers.add(timer);
-    },
-  });
+  const behaviors = withBehaviors
+    ? createBehaviors(state, {
+        modes: profile.modes,
+        navDelayMs: options.navDelayMs ?? 0,
+        later(ms, fn) {
+          const timer = setTimeout(() => {
+            timers.delete(timer);
+            fn();
+          }, ms);
+          timers.add(timer);
+        },
+      })
+    : undefined;
 
   /** Known node, implemented by this simulated model. */
   const known = (node: string | undefined) => {
@@ -260,6 +269,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const getEntryXml = (node: string): { status: string; value?: string } => {
     const entry = known(node);
     if (!entry) return { status: "FS_NODE_DOES_NOT_EXIST" };
+    if (blocked.has(entry.path)) return { status: "FS_NODE_BLOCKED" };
     if (entry.def.type === "list") return { status: "FS_FAIL" };
     return { status: "FS_OK", value: valueXml(entry.def.type, scalars.get(entry.path)) };
   };
@@ -272,7 +282,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     if ("status" in outcome) return outcome.status;
     scalars.set(entry.path, outcome.value);
     notify(entry.path, entry.def);
-    return (withBehaviors && behaviors.apply(entry.path, outcome.value)) || "FS_OK";
+    return behaviors?.apply(entry.path, outcome.value) || "FS_OK";
   };
 
   /** Declared fields first, then any extra ones the item carries (e.g. a preset's `url`). */
@@ -347,6 +357,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
       case "LIST_GET_NEXT": {
         const entry = known(node);
         if (!entry) return send(res, 200, fsapi("FS_NODE_DOES_NOT_EXIST"));
+        if (blocked.has(entry.path)) return send(res, 200, fsapi("FS_NODE_BLOCKED"));
         if (entry.def.type !== "list") return send(res, 200, fsapi("FS_FAIL"));
         const startKey = Number(start ?? -1);
         const maxItems = Math.max(1, Number(params.get("maxItems") ?? 20));
