@@ -17,7 +17,7 @@ function initials(name: string): string {
     .join("");
 }
 
-const escape = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.codePointAt(0)};`);
+const escapeXml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.codePointAt(0)};`);
 
 /** A 500×500 SVG: a gradient picked from the name, radio waves, and the name's initials. */
 export function artworkSvg(name: string): string {
@@ -30,7 +30,7 @@ export function artworkSvg(name: string): string {
 <g fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="16">
 <circle cx="250" cy="250" r="125"/><circle cx="250" cy="250" r="190"/><circle cx="250" cy="250" r="255"/>
 </g>
-<text x="250" y="250" dy="0.35em" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="150" font-weight="700" fill="#fff">${escape(initials(name))}</text>
+<text x="250" y="250" dy="0.35em" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="150" font-weight="700" fill="#fff">${escapeXml(initials(name))}</text>
 </svg>
 `;
 }
