@@ -35,6 +35,8 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - ⭐ **Presets**: recall them, save what's playing, delete and reorder (where the radio allows it).
 - 📻 **FM tuner**: a dial, one-step buttons, and seek to the next station.
 - 📶 **DAB scan**, with progress. Stations that can no longer be received are removed afterwards.
+- 🏠 **Multiroom groups**: group speakers so they play the same thing in sync, with a group volume and a volume for each speaker. Add and remove speakers, rename, hand over to another speaker, or ungroup.
+- 🔎 **Finds your other speakers**: once one speaker is added, the others it knows of are one tap away.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
 - ℹ️ **Device info**, including the Wi-Fi network name, which UNDOK shows as "ERROR".
 - 📱 **Phone and desktop**, light and dark, and it installs as an app.
@@ -56,6 +58,8 @@ pnpm sim     # terminal 1: a simulated radio on 127.0.0.1:8099
 pnpm web     # terminal 2: open http://localhost:5173 and add 127.0.0.1:8099
 ```
 
+To try multiroom, run `pnpm sim --speakers 4` instead: four simulated speakers on ports 8099 to 8102 that can be grouped. Add one of them and the others show up under "On your network".
+
 **With your own radios:** add each one by its IP address and PIN (usually `1234`). You'll find the IP address in the radio's network settings menu. The browser and the radios must be on the same network.
 
 **As an installed app:** `pnpm web:build && pnpm web:preview`, then open http://localhost:4173 and install it from the browser.
@@ -71,7 +75,7 @@ pnpm web     # terminal 2: open http://localhost:5173 and add 127.0.0.1:8099
 | --- | --- |
 | [`apps/web`](apps/web) | The web app: an installable PWA (React) that talks to radios directly from the browser |
 | [`packages/fsapi-core`](packages/fsapi-core) | Typed FSAPI ("netRemote") client for browsers and Node: requests, XML parsing, catalog-based validation, lists, menus, sessions and notifications |
-| [`packages/fsapi-sim`](packages/fsapi-sim) | A simulated radio over HTTP, with menus, presets, FM, DAB and settings, for tests and hardware-free development |
+| [`packages/fsapi-sim`](packages/fsapi-sim) | A simulated radio over HTTP, with menus, presets, FM, DAB and settings, and simulated homes of speakers that group, for tests and hardware-free development |
 | [`apps/cli`](apps/cli) | `muga`, a command-line tool for poking at radios |
 | [`data/node-catalog.json`](data/node-catalog.json) | 284 FSAPI nodes (paths, types, flags, enums, list fields), the source of the generated types |
 
@@ -84,6 +88,7 @@ pnpm muga get 127.0.0.1:8099 play.status
 pnpm muga set 127.0.0.1:8099 sys.audio.volume 12
 pnpm muga list 127.0.0.1:8099 sys.caps.validModes
 pnpm muga browse 127.0.0.1:8099 2 0  # the current source's menu, after entering folders 2 then 0
+pnpm muga groups 127.0.0.1:8099      # multiroom: every speaker on the network and its group
 pnpm muga nodes multiroom            # search the catalog offline
 pnpm muga --help
 ```
@@ -112,6 +117,7 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 - FSAPI is plain HTTP, with the PIN in the URL; the default PIN is `1234`. The radios answer with `Access-Control-Allow-Origin: *`, which is what makes a web app without a server possible ([ADR 0001](docs/adr/0001-hubless-direct-transport-first.md)).
 - Browsing and presets move the radio's menu (`nav.state`, `nav.action.*`). That's harmless, but someone using the radio's own menu at the same time will see it jump, as with UNDOK.
 - Plain GET/SET needs no session. `muga watch` and `NotificationSession` create the radio's **single** session, so other controllers (such as UNDOK) lose live updates while they run.
+- Group changes are SETs on the group's lead speaker, and every speaker in the group follows them. `muga groups` only reads.
 - Writes are checked against the catalog and refused locally if they're invalid. Don't point automated tests at real radios for factory reset, firmware updates or network settings.
 
 </details>
@@ -123,7 +129,8 @@ Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, de
 - ✅ Protocol core, simulator and command-line tool
 - ✅ Web app: now playing, controls, volume, sources and presets
 - ✅ Menu browsing, preset editing, FM tuner, DAB scan and settings
-- 🔜 Multiroom groups and stereo pairs
+- ✅ Multiroom groups
+- 🔜 Stereo pairs
 - 🔜 Firmware updates, Bluetooth settings and a carefully guarded factory reset
 - 💭 A small hub on your network, for discovery, live updates and HTTPS on phones
 

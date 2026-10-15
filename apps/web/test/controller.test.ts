@@ -1,5 +1,5 @@
 import { type RadioSimulator, type SimulatorOptions, startSimulator } from "@muga/fsapi-sim";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { RadioController, type RadioControllerOptions } from "../src/radio/controller.ts";
 
 let sim: RadioSimulator | undefined;
@@ -45,6 +45,24 @@ describe("RadioController", () => {
       text: "Simulated broadcast",
     });
     expect(s.play.caps).not.toBe(0);
+  });
+
+  it("reads a background radio in full as soon as it's selected", async () => {
+    sim = await startSimulator();
+    controller = new RadioController(
+      { id: "sim", host: sim.host, pin: "1234", name: "Sim" },
+      { activeIntervalMs: 60_000, backgroundIntervalMs: 60_000 },
+    );
+    controller.start(false);
+    await controller.refreshNow();
+    // Let the poll queued by start() finish too, so only the next timer (a minute) is left.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await controller.refreshNow();
+    // Background polls leave out the track details.
+    expect(controller.getSnapshot().play.text).toBe("");
+    // What the registry does when the radio is selected.
+    controller.start(true);
+    await vi.waitFor(() => expect(controller?.getSnapshot().play.text).toBe("Simulated broadcast"));
   });
 
   it("coalesces rapid volume changes: latest value wins, one SET in flight", async () => {

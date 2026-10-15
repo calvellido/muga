@@ -4,12 +4,15 @@ import {
   encodeByteArray,
   enumValue,
   lookupNode,
+  MULTIROOM_UDN_PREFIX,
   NODE_DEFS,
   type NodeDef,
   type NodePath,
+  udnSuffix,
 } from "@muga/fsapi-core";
 import { artworkSvg } from "./artwork.ts";
 import { createBehaviors, type SimState } from "./behaviors.ts";
+import { createMultiroomNetwork, type MultiroomLink, type MultiroomNetwork } from "./multiroom.ts";
 import { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
 
 export interface SimulatorOptions {
@@ -30,6 +33,11 @@ export interface SimulatorOptions {
   navDelayMs?: number;
   /** One DAB scan step (one station found). Default 300 ms. */
   dabScanStepMs?: number;
+  /**
+   * Speakers to group with: simulators started with the same network list each other and can
+   * form multiroom groups. Default: a network of this speaker alone. Needs `behaviors`.
+   */
+  multiroom?: MultiroomNetwork;
 }
 
 export interface SimRequest {
@@ -41,6 +49,8 @@ export interface SimRequest {
 export interface RadioSimulator {
   /** `http://<host>:<port>` */
   readonly url: string;
+  /** Multiroom UDN: what `multiroom.group.addClient` takes for this speaker. */
+  readonly udn: string;
   /** `<host>:<port>`, usable as an FsapiClient host. */
   readonly host: string;
   readonly pin: string;
@@ -220,6 +230,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     flush();
   };
 
+  let link: MultiroomLink | undefined;
   const state: SimState = {
     get(path) {
       const entry = lookupNode(path);
@@ -230,6 +241,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
       if (def.type === "list") throw new Error(`${canonical} is a list; use setList`);
       scalars.set(canonical, toWire(def, value, canonical));
       notify(canonical, def);
+      link?.changed(canonical);
     },
     list(path) {
       return (lists.get(resolve(path).path) ?? []).map((item) => ({ ...item }));
@@ -287,7 +299,9 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     if ("status" in outcome) return outcome.status;
     scalars.set(entry.path, outcome.value);
     notify(entry.path, entry.def);
-    return behaviors?.apply(entry.path, outcome.value) || "FS_OK";
+    const status = behaviors?.apply(entry.path, outcome.value);
+    if (status) return status;
+    return link?.apply(entry.path, outcome.value) || "FS_OK";
   };
 
   /** Declared fields first, then any extra ones the item carries (e.g. a preset's `url`). */
@@ -438,6 +452,14 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const hostname = address.family === "IPv6" ? `[${address.address}]` : address.address;
   const host = `${hostname}:${address.port}`;
   baseUrl = `http://${host}`;
+  const identity = String(
+    state.get("netRemote.sys.info.dmruuid") || state.get("netRemote.sys.info.radioId"),
+  );
+  const udn = `${MULTIROOM_UDN_PREFIX}${udnSuffix(identity)}`;
+  if (behaviors) {
+    // Real radios list a bare IP; simulated speakers share one, so the port is included.
+    link = (options.multiroom ?? createMultiroomNetwork()).join({ udn, ip: host, state });
+  }
   // The station playing at start gets a logo too, now that the address is known.
   const playing = state.get("netRemote.play.info.name");
   if (behaviors && playing && !state.get("netRemote.play.info.graphicUri")) {
@@ -449,6 +471,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
 
   return {
     url: baseUrl,
+    udn,
     host,
     pin,
     get sessionId() {
@@ -457,6 +480,8 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     requests,
     ...state,
     close() {
+      link?.leave();
+      link = undefined;
       for (const timer of timers) clearTimeout(timer);
       timers.clear();
       endWaiter(404);

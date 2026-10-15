@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { RadioController } from "./controller.ts";
+import type { MultiroomSnapshot } from "./multiroom.ts";
 import type { RadioRegistry, RegistrySnapshot } from "./registry.ts";
 import type { RadioSnapshot } from "./types.ts";
 
@@ -21,6 +22,12 @@ export function useRegistry(): RadioRegistry {
 export function useRegistrySnapshot(): RegistrySnapshot {
   const registry = useRegistry();
   return useSyncExternalStore(registry.subscribe, registry.getSnapshot, registry.getSnapshot);
+}
+
+/** Multiroom groups and the speakers on the network. */
+export function useMultiroom(): MultiroomSnapshot {
+  const { multiroom } = useRegistry();
+  return useSyncExternalStore(multiroom.subscribe, multiroom.getSnapshot, multiroom.getSnapshot);
 }
 
 const noSubscription = () => () => undefined;

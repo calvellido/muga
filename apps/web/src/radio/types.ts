@@ -172,6 +172,14 @@ export interface SettingsState {
     | undefined;
 }
 
+/** A multiroom group's volumes, read from its server, in the server's volume steps. */
+export interface GroupMix {
+  /** `multiroom.group.masterVolume`. */
+  master: number | undefined;
+  /** By client number (`multiroom.client.volumeN`, `muteN`). */
+  clients: { volume: number | undefined; muted: boolean }[];
+}
+
 export interface ActionError {
   action: string;
   kind: FsapiErrorKind | "unknown";
@@ -185,6 +193,8 @@ export interface RadioSnapshot {
   name: string;
   version: string;
   model: string;
+  /** UPnP UDN (`sys.info.dmruuid`): with the radio id, how it's found in multiroom lists. */
+  udn: string;
   volumeSteps: number;
   power: boolean | undefined;
   modeKey: number | undefined;
@@ -202,6 +212,8 @@ export interface RadioSnapshot {
   tuner: TunerState | undefined;
   dabScan: DabScanState;
   settings: SettingsState;
+  /** Read while this radio serves the multiroom group on screen. */
+  mixer: GroupMix | undefined;
   lastError: ActionError | undefined;
 }
 

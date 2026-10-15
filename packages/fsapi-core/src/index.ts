@@ -40,6 +40,25 @@ export {
 } from "./errors.ts";
 export { NODE_DEFS } from "./generated/nodes.ts";
 export {
+  addToGroup,
+  createGroup,
+  destroyGroup,
+  type GroupRole,
+  handOverGroup,
+  isMultiroomFailure,
+  MAX_GROUP_CLIENTS,
+  MULTIROOM_UDN_PREFIX,
+  MULTIROOM_WAITS,
+  type MultiroomDevice,
+  MultiroomFailure,
+  type MultiroomOptions,
+  multiroomUdn,
+  readMultiroomDevices,
+  removeFromGroup,
+  type StereoRole,
+  udnSuffix,
+} from "./multiroom.ts";
+export {
   enableNav,
   isNavFailure,
   NAV_PAGE_SIZE,

@@ -1,5 +1,10 @@
 import { DEFAULT_PIN, type FetchLike, FsapiClient } from "@muga/fsapi-core";
 import { RadioController, type RadioControllerOptions } from "./controller.ts";
+import {
+  MultiroomDirectory,
+  type MultiroomDirectoryOptions,
+  type MultiroomGroup,
+} from "./multiroom.ts";
 import type { RadioConfig } from "./types.ts";
 
 export interface StorageLike {
@@ -10,12 +15,15 @@ export interface StorageLike {
 export interface RegistrySnapshot {
   radios: RadioConfig[];
   activeId: string | undefined;
+  /** A multiroom group is on screen; `activeId` is then its server. */
+  activeGroupId: string | undefined;
 }
 
 export interface RadioRegistryOptions {
   storage?: StorageLike | undefined;
   fetch?: FetchLike;
   controller?: Omit<RadioControllerOptions, "fetch">;
+  multiroom?: MultiroomDirectoryOptions;
 }
 
 const RADIOS_KEY = "muga.radios.v1";
@@ -54,13 +62,16 @@ function loadRadios(storage: StorageLike): RadioConfig[] {
   }
 }
 
-/** Saved radios, the selected one, and one controller per radio. */
+/** Saved radios, the selected one (or group), one controller per radio, and multiroom groups. */
 export class RadioRegistry {
+  readonly multiroom: MultiroomDirectory;
   private snapshot: RegistrySnapshot;
   private readonly listeners = new Set<() => void>();
   private readonly controllers = new Map<string, RadioController>();
   private readonly storage: StorageLike;
   private visible = true;
+  /** Per radio, what the multiroom list depends on: whether it answers, and its UDN. */
+  private readonly seen = new Map<string, string>();
 
   constructor(private readonly options: RadioRegistryOptions = {}) {
     this.storage = safeStorage(options.storage);
@@ -69,7 +80,23 @@ export class RadioRegistry {
     this.snapshot = {
       radios,
       activeId: radios.some((r) => r.id === saved) ? saved : radios[0]?.id,
+      activeGroupId: undefined,
     };
+    this.multiroom = new MultiroomDirectory(
+      {
+        radios: () => this.snapshot.radios,
+        controller: (id) => this.controller(id),
+        activeId: () => this.snapshot.activeId,
+        connect: (host) =>
+          new FsapiClient({
+            host,
+            pin: DEFAULT_PIN,
+            ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+          }),
+      },
+      options.multiroom,
+    );
+    this.multiroom.subscribe(() => this.followGroup());
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -83,10 +110,12 @@ export class RadioRegistry {
   start(): void {
     for (const radio of this.snapshot.radios)
       this.controller(radio.id)?.start(radio.id === this.snapshot.activeId);
+    this.multiroom.start();
   }
 
   stop(): void {
     for (const controller of this.controllers.values()) controller.stop();
+    this.multiroom.stop();
   }
 
   /** Pause polling while the page is hidden; resume (with an immediate refresh) when it's shown. */
@@ -108,6 +137,7 @@ export class RadioRegistry {
       ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
     });
     this.controllers.set(id, controller);
+    controller.subscribe(() => this.radioChanged(id, controller));
     return controller;
   }
 
@@ -149,27 +179,45 @@ export class RadioRegistry {
     const radios = existing
       ? this.snapshot.radios.map((r) => (r.id === config.id ? config : r))
       : [...this.snapshot.radios, config];
-    this.commit({ radios, activeId: config.id });
+    this.leaveGroupView();
+    this.commit({ radios, activeId: config.id, activeGroupId: undefined });
     if (previous !== config.id) this.controllers.get(previous ?? "")?.setActive(false);
     if (this.visible) this.start();
+    this.multiroom.radiosChanged();
     return config;
   }
 
   remove(id: string): void {
+    this.leaveGroupView();
     this.dropController(id);
     const radios = this.snapshot.radios.filter((r) => r.id !== id);
     const activeId = this.snapshot.activeId === id ? radios[0]?.id : this.snapshot.activeId;
-    this.commit({ radios, activeId });
+    this.commit({ radios, activeId, activeGroupId: undefined });
     this.controller(activeId)?.setActive(true);
+    this.multiroom.radiosChanged();
   }
 
   select(id: string): void {
-    if (id === this.snapshot.activeId || !this.snapshot.radios.some((r) => r.id === id)) return;
-    this.controller(this.snapshot.activeId)?.setActive(false);
-    this.commit({ ...this.snapshot, activeId: id });
-    const controller = this.controller(id);
-    if (this.visible) controller?.start(true);
-    controller?.setActive(true);
+    if (!this.snapshot.radios.some((r) => r.id === id)) return;
+    if (id === this.snapshot.activeId && !this.snapshot.activeGroupId) return;
+    this.leaveGroupView();
+    this.activate(id, undefined);
+  }
+
+  /** Shows a multiroom group: its server becomes the selected radio. */
+  selectGroup(groupId: string): void {
+    const serverId = this.multiroom.group(groupId)?.server.radioId;
+    if (!serverId || !this.snapshot.radios.some((r) => r.id === serverId)) return;
+    if (serverId === this.snapshot.activeId && groupId === this.snapshot.activeGroupId) return;
+    if (serverId !== this.snapshot.activeId) this.leaveGroupView();
+    this.activate(serverId, groupId);
+    this.controller(serverId)?.setGroupServer(true);
+  }
+
+  /** Shows the group a saved speaker serves or belongs to, if any. */
+  selectGroupOf(radioId: string): void {
+    const group = this.multiroom.groupOf(radioId);
+    if (group) this.selectGroup(group.id);
   }
 
   updatePin(id: string, pin: string): void {
@@ -184,9 +232,52 @@ export class RadioRegistry {
     this.commit({ ...this.snapshot, radios });
   }
 
+  private activate(id: string, activeGroupId: string | undefined): void {
+    const previous = this.snapshot.activeId;
+    if (previous !== id) this.controller(previous)?.setActive(false);
+    this.commit({ ...this.snapshot, activeId: id, activeGroupId });
+    const controller = this.controller(id);
+    if (this.visible) controller?.start(true);
+    controller?.setActive(true);
+  }
+
+  private leaveGroupView(): void {
+    if (this.snapshot.activeGroupId) this.controller(this.snapshot.activeId)?.setGroupServer(false);
+  }
+
+  /** Keeps a group on screen through changes: a rename gives it a new id, a hand-over a new server. */
+  private followGroup(): void {
+    const { activeGroupId, activeId } = this.snapshot;
+    const directory = this.multiroom.getSnapshot();
+    if (!activeGroupId || directory.busy || directory.status !== "ready") return;
+    const group: MultiroomGroup | undefined =
+      this.multiroom.group(activeGroupId) ??
+      directory.groups.find((g) => g.server.radioId !== undefined && g.server.radioId === activeId);
+    const serverId = group?.server.radioId;
+    if (!group || !serverId || !this.snapshot.radios.some((r) => r.id === serverId)) {
+      this.leaveGroupView();
+      this.commit({ ...this.snapshot, activeGroupId: undefined });
+      return;
+    }
+    if (group.id !== activeGroupId || serverId !== activeId) this.selectGroup(group.id);
+  }
+
+  /** A radio came online or reported its UDN: the multiroom list may now include it. */
+  private radioChanged(id: string, controller: RadioController): void {
+    const { connection, udn } = controller.getSnapshot();
+    const key = `${connection}|${udn}`;
+    if (this.seen.get(id) === key) return;
+    this.seen.set(id, key);
+    this.multiroom.radiosChanged();
+    if (connection === "online" && this.multiroom.getSnapshot().status !== "ready") {
+      void this.multiroom.refresh();
+    }
+  }
+
   private dropController(id: string): void {
     this.controllers.get(id)?.stop();
     this.controllers.delete(id);
+    this.seen.delete(id);
   }
 
   private commit(snapshot: RegistrySnapshot): void {

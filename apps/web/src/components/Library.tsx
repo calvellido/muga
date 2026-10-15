@@ -2,6 +2,7 @@ import { type KeyboardEvent, useId, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import { hasCap, NavCap } from "../radio/caps.ts";
 import type { RadioController } from "../radio/controller.ts";
+import type { MultiroomGroup } from "../radio/multiroom.ts";
 import type { RadioSnapshot } from "../radio/types.ts";
 import { Browse } from "./Browse.tsx";
 import { Presets } from "./Presets.tsx";
@@ -11,10 +12,12 @@ type Tab = "sources" | "browse" | "presets";
 interface Props {
   snapshot: RadioSnapshot;
   controller: RadioController;
+  /** The group this radio serves, when the group is on screen. */
+  group?: MultiroomGroup | undefined;
 }
 
 /** Sources, the source's menu (when it has one) and presets, as ARIA tabs. */
-export function Library({ snapshot, controller }: Props) {
+export function Library({ snapshot, controller, group }: Props) {
   const t = useT();
   const id = useId();
   const [selected, setSelected] = useState<Tab>("sources");
@@ -68,7 +71,9 @@ export function Library({ snapshot, controller }: Props) {
         aria-labelledby={`${id}-${tab}-tab`}
         className="panel"
       >
-        {tab === "sources" && <SourceList snapshot={snapshot} controller={controller} />}
+        {tab === "sources" && (
+          <SourceList snapshot={snapshot} controller={controller} group={group} />
+        )}
         {tab === "browse" && <Browse snapshot={snapshot} controller={controller} />}
         {tab === "presets" && <Presets snapshot={snapshot} controller={controller} />}
       </div>
@@ -76,9 +81,18 @@ export function Library({ snapshot, controller }: Props) {
   );
 }
 
-function SourceList({ snapshot, controller }: Props) {
+function SourceList({ snapshot, controller, group }: Props) {
   const t = useT();
   if (snapshot.modes.length === 0) return <p className="muted">{t("sources.empty")}</p>;
+
+  function choose(mode: RadioSnapshot["modes"][number]) {
+    // A source that can't be shared ends the group (UNDOK warns the same way).
+    const unshared = group && mode.streamable === 0 && mode.key !== snapshot.modeKey;
+    const values = { source: mode.label || mode.id, group: group?.name };
+    if (unshared && !window.confirm(t("groups.source.confirm", values))) return;
+    void controller.setMode(mode.key);
+  }
+
   return (
     <ul className="option-list">
       {snapshot.modes.map((mode) => {
@@ -90,9 +104,14 @@ function SourceList({ snapshot, controller }: Props) {
               className="option option--stacked"
               aria-pressed={current}
               disabled={snapshot.connection !== "online"}
-              onClick={() => void controller.setMode(mode.key)}
+              onClick={() => choose(mode)}
             >
-              <span className="option__label">{mode.label || mode.id}</span>
+              <span className="option__label">
+                {mode.label || mode.id}
+                {group && mode.streamable === 0 && (
+                  <span className="option__note">{t("groups.source.notShared")}</span>
+                )}
+              </span>
               {current && <span className="badge">{t("sources.current")}</span>}
             </button>
           </li>

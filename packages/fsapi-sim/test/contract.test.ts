@@ -94,6 +94,7 @@ describe("client ↔ simulator contract", () => {
       "FM",
       "BLUETOOTH",
       "AUXIN",
+      "Audsync",
     ]);
     expect(modes[0]).toMatchObject({ key: 0, label: "Internet radio", selectable: 1, modeType: 0 });
 
@@ -101,10 +102,10 @@ describe("client ↔ simulator contract", () => {
       startKey: 4,
       maxItems: 10,
     });
-    expect(page.items.map((m) => m.key)).toEqual([5, 6]);
+    expect(page.items.map((m) => m.key)).toEqual([5, 6, 7]);
     expect(page.listEnd).toBe(true);
 
-    const end = await client.listGetNext("netRemote.sys.caps.validModes", { startKey: 6 });
+    const end = await client.listGetNext("netRemote.sys.caps.validModes", { startKey: 7 });
     expect(end).toEqual({ items: [], listEnd: true });
   });
 

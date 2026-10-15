@@ -177,6 +177,8 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.sys.clock.timeZone": "UTC+01:00: Madrid, Paris, Berlin",
     "netRemote.sys.clock.localDate": "20260115",
     "netRemote.sys.clock.localTime": "093000",
+    // Speakers group only with speakers of the same multiroom protocol (doc 05 §6.2).
+    "netRemote.multiroom.caps.protocolVersion": 3,
   },
   lists: {
     "netRemote.sys.caps.validModes": [
@@ -187,6 +189,8 @@ export const DEFAULT_PROFILE: SimProfile = {
       { key: 4, id: "FM", selectable: 1, label: "FM", streamable: 0, modeType: 0 },
       { key: 5, id: "BLUETOOTH", selectable: 1, label: "Bluetooth", streamable: 0, modeType: 0 },
       { key: 6, id: "AUXIN", selectable: 1, label: "Aux in", streamable: 0, modeType: 0 },
+      // A multiroom client plays its server's stream in this hidden source.
+      { key: 7, id: "Audsync", selectable: 0, label: "Multiroom", streamable: 0, modeType: 0 },
     ],
     "netRemote.sys.caps.eqPresets": [
       { key: 0, label: "My EQ" },
