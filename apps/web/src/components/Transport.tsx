@@ -1,6 +1,6 @@
 import { useT } from "../i18n/index.tsx";
 import { hasCap, PlayCap } from "../radio/caps.ts";
-import { isPlaying, type RadioController } from "../radio/controller.ts";
+import { currentModeId, isPlaying, type RadioController } from "../radio/controller.ts";
 import type { RadioSnapshot } from "../radio/types.ts";
 import { IconButton } from "./IconButton.tsx";
 
@@ -17,6 +17,8 @@ export function Transport({
   const playing = isPlaying(play.status);
   const canPause = hasCap(play.caps, PlayCap.Pause) || !hasCap(play.caps, PlayCap.Stop);
   const main = playing ? (canPause ? "pause" : "stop") : "play";
+  // On FM, next / previous seek to the next station up or down the band.
+  const fm = currentModeId(snapshot) === "FM";
 
   return (
     <fieldset className="transport">
@@ -31,7 +33,7 @@ export function Transport({
       />
       <IconButton
         icon="previous"
-        label={t("controls.previous")}
+        label={t(fm ? "controls.seekDown" : "controls.previous")}
         hidden={!hasCap(play.caps, PlayCap.SkipPrevious)}
         disabled={disabled}
         onClick={() => void controller.control("PREVIOUS")}
@@ -47,7 +49,7 @@ export function Transport({
       />
       <IconButton
         icon="next"
-        label={t("controls.next")}
+        label={t(fm ? "controls.seekUp" : "controls.next")}
         hidden={!hasCap(play.caps, PlayCap.SkipNext)}
         disabled={disabled}
         onClick={() => void controller.control("NEXT")}

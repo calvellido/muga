@@ -7,7 +7,10 @@ import {
 } from "@muga/fsapi-core";
 import { BrowseSession, initialBrowse } from "./browse.ts";
 import { hasCap, PlayCap } from "./caps.ts";
+import { DabScanner } from "./dab.ts";
+import { LatestWins } from "./latest.ts";
 import { PresetManager } from "./presets.ts";
+import { FmTuner } from "./tuner.ts";
 import type {
   ActionError,
   PlayAction,
@@ -53,6 +56,14 @@ const TRACK_NODES = [
   "netRemote.nav.caps",
 ] as const satisfies readonly ScalarPath[];
 
+/** Also read every active poll while the radio is on FM. */
+const FM_NODES = ["netRemote.play.frequency"] as const satisfies readonly ScalarPath[];
+
+type PollNode =
+  | (typeof FAST_NODES)[number]
+  | (typeof FM_NODES)[number]
+  | (typeof BACKGROUND_NODES)[number];
+
 /** Read for radios that aren't selected, for the speaker list. */
 const BACKGROUND_NODES = [
   "netRemote.sys.power",
@@ -82,6 +93,8 @@ export interface RadioControllerOptions {
   trackRefreshEvery?: number;
   navPollMs?: number;
   navTimeoutMs?: number;
+  /** DAB scan progress reads. Default 1000 ms. */
+  dabPollMs?: number;
   now?: () => number;
 }
 
@@ -120,8 +133,15 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     currentPreset: undefined,
     presets: { status: "idle", items: [] },
     browse: initialBrowse(),
+    tuner: undefined,
+    dabScan: { status: "idle", found: 0 },
     lastError: undefined,
   };
+}
+
+/** The `sys.caps.validModes` id of the current source (`IR`, `FM`, `DAB`, …). */
+export function currentModeId(snapshot: RadioSnapshot): string | undefined {
+  return snapshot.modes.find((m) => m.key === snapshot.modeKey)?.id;
 }
 
 export function isPlaying(status: unknown): boolean {
@@ -148,6 +168,10 @@ export class RadioController {
   readonly presets: PresetManager;
   /** Menu browsing of the current source. */
   readonly browse: BrowseSession;
+  /** FM frequency. */
+  readonly tuner: FmTuner;
+  /** DAB station scan. */
+  readonly dab: DabScanner;
 
   private snapshot: RadioSnapshot;
   private readonly listeners = new Set<() => void>();
@@ -164,8 +188,16 @@ export class RadioController {
   private tick = 0;
   private lastTrackKey = "";
 
-  private volumeNext: number | undefined;
-  private volumeLoop: Promise<boolean> | undefined;
+  private readonly volumeWriter = new LatestWins<number>(
+    (volume) => this.client.set("netRemote.sys.audio.volume", volume),
+    {
+      onError: (error) => this.fail("volume", error),
+      onSettled: () => {
+        this.volumeSettleUntil = this.opts.now() + 800;
+      },
+    },
+  );
+  /** Poll results are ignored until then, so the slider doesn't jump back. */
   private volumeSettleUntil = 0;
 
   constructor(config: RadioConfig, options: RadioControllerOptions = {}) {
@@ -181,6 +213,7 @@ export class RadioController {
       trackRefreshEvery: options.trackRefreshEvery ?? 5,
       navPollMs: options.navPollMs ?? 500,
       navTimeoutMs: options.navTimeoutMs ?? 30_000,
+      dabPollMs: options.dabPollMs ?? 1_000,
       now: options.now ?? Date.now,
     };
     const nav: NavOptions = { pollMs: this.opts.navPollMs, timeoutMs: this.opts.navTimeoutMs };
@@ -195,9 +228,12 @@ export class RadioController {
         this.lastTrackKey = "";
         this.schedule(300);
       },
+      now: () => this.opts.now(),
     };
     this.presets = new PresetManager(context);
     this.browse = new BrowseSession(context);
+    this.tuner = new FmTuner(context);
+    this.dab = new DabScanner(context, this.browse, { pollMs: this.opts.dabPollMs });
   }
 
   // Store interface (for useSyncExternalStore)
@@ -264,28 +300,8 @@ export class RadioController {
     const max = Math.max(0, this.snapshot.volumeSteps - 1);
     const volume = Math.round(Math.min(max, Math.max(0, value)));
     this.update({ volume });
-    this.volumeNext = volume;
     this.volumeSettleUntil = this.opts.now() + 1_500;
-    if (this.volumeLoop) return this.volumeLoop;
-
-    this.volumeLoop = (async () => {
-      try {
-        while (this.volumeNext !== undefined) {
-          const next = this.volumeNext;
-          this.volumeNext = undefined;
-          await this.client.set("netRemote.sys.audio.volume", next);
-        }
-        return true;
-      } catch (error) {
-        this.volumeNext = undefined;
-        this.fail("volume", error);
-        return false;
-      } finally {
-        this.volumeLoop = undefined;
-        this.volumeSettleUntil = this.opts.now() + 800;
-      }
-    })();
-    return this.volumeLoop;
+    return this.volumeWriter.push(volume);
   }
 
   toggleMute(): Promise<boolean> {
@@ -346,7 +362,12 @@ export class RadioController {
       await this.client.set("netRemote.sys.mode", key);
       this.browse.invalidate();
       // nav.caps differs per source; read it again with the track details.
-      this.update({ modeKey: key, navCaps: undefined, presets: { status: "idle", items: [] } });
+      this.update({
+        modeKey: key,
+        navCaps: undefined,
+        presets: { status: "idle", items: [] },
+        ...(this.dab.scanning ? {} : { dabScan: { status: "idle", found: 0 } }),
+      });
       this.lastTrackKey = "";
     });
   }
@@ -383,7 +404,10 @@ export class RadioController {
   private async pollOnce(): Promise<void> {
     try {
       if (!this.infoLoaded) await this.loadInfo();
-      const nodes = this.active ? FAST_NODES : BACKGROUND_NODES;
+      const onFm = currentModeId(this.snapshot) === "FM";
+      const nodes: readonly PollNode[] = this.active
+        ? [...FAST_NODES, ...(onFm ? FM_NODES : [])]
+        : BACKGROUND_NODES;
       const { values } = await this.client.getMultiple(nodes);
       const previousMode = this.snapshot.modeKey;
       const modeKey = values["netRemote.sys.mode"];
@@ -394,7 +418,11 @@ export class RadioController {
       if (power !== undefined) patch.power = power === "ON" || power === 1;
       if (modeKey !== undefined) patch.modeKey = modeKey;
       const volume = values["netRemote.sys.audio.volume"];
-      if (volume !== undefined && !this.volumeLoop && this.opts.now() >= this.volumeSettleUntil) {
+      if (
+        volume !== undefined &&
+        !this.volumeWriter.busy &&
+        this.opts.now() >= this.volumeSettleUntil
+      ) {
         patch.volume = volume;
       }
       const mute = values["netRemote.sys.audio.mute"];
@@ -402,6 +430,7 @@ export class RadioController {
       if (modeKey !== undefined && previousMode !== undefined && modeKey !== previousMode) {
         patch.presets = { status: "idle", items: [] };
         patch.navCaps = undefined;
+        if (!this.dab.scanning) patch.dabScan = { status: "idle", found: 0 };
         this.browse.invalidate();
       }
       // The radio forgets the menu position in standby.
@@ -414,6 +443,10 @@ export class RadioController {
       });
       this.failures = 0;
 
+      if (this.active && modeId === "FM") {
+        if (this.snapshot.tuner) this.tuner.observe(values["netRemote.play.frequency"]);
+        else await this.tuner.load();
+      }
       if (this.active) await this.refreshTrack();
     } catch (error) {
       if (isFsapiError(error, "pin")) {

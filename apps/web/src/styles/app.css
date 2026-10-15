@@ -633,6 +633,26 @@ input {
   color: var(--text-muted);
 }
 
+.tuner {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.tuner__frequency {
+  font-size: 1.6rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tuner__controls {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Tabs, sources and presets */
 .tabs {
   display: flex;

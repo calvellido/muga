@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
-import type { RadioController } from "../radio/controller.ts";
+import { currentModeId, type RadioController } from "../radio/controller.ts";
 import type { BrowseCrumb, BrowseItem, RadioSnapshot } from "../radio/types.ts";
 import { Icon } from "./Icon.tsx";
 import { IconButton } from "./IconButton.tsx";
@@ -10,8 +10,80 @@ interface Props {
   controller: RadioController;
 }
 
-/** The current source's menu: folders, playable items, search and paging. */
+/** The current source's menu, plus the station scan on DAB. */
 export function Browse({ snapshot, controller }: Props) {
+  const t = useT();
+  const { power, connection, dabScan, browse } = snapshot;
+  const dab = currentModeId(snapshot) === "DAB";
+  const scanning = dabScan.status === "scanning" || dabScan.status === "pruning";
+  const online = connection === "online";
+
+  // Pick up a scan started from the radio itself.
+  useEffect(() => {
+    if (dab && online && power === true) void controller.dab.check();
+  }, [dab, online, power, controller]);
+
+  if (power === false) return <p className="muted">{t("browse.standby")}</p>;
+  return (
+    <>
+      {dab && (scanning || dabScan.status !== "idle" || browse.path.length === 0) && (
+        <DabScan snapshot={snapshot} controller={controller} />
+      )}
+      {!scanning && <Menu snapshot={snapshot} controller={controller} />}
+    </>
+  );
+}
+
+function DabScan({ snapshot, controller }: Props) {
+  const t = useT();
+  const { status, found } = snapshot.dabScan;
+
+  if (status === "scanning" || status === "pruning") {
+    return (
+      <div className="notice dab-scan" role="status">
+        <span className="spinner" aria-hidden="true" />
+        <p>{status === "scanning" ? t("dab.scanning", { count: found }) : t("dab.pruning")}</p>
+        {status === "scanning" && (
+          <button
+            type="button"
+            className="button button--ghost button--small notice__action"
+            onClick={() => void controller.dab.cancel()}
+          >
+            {t("dab.cancel")}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function start() {
+    if (window.confirm(t("dab.confirm"))) void controller.dab.scan();
+  }
+
+  const finished = status === "done" || status === "cancelled";
+  return (
+    <div className="panel-toolbar">
+      <p className="hint" role={finished ? "status" : undefined}>
+        {status === "done"
+          ? t("dab.done", { count: found })
+          : status === "cancelled"
+            ? t("dab.cancelled")
+            : t("dab.hint")}
+      </p>
+      <button
+        type="button"
+        className="button button--ghost button--small"
+        disabled={snapshot.connection !== "online"}
+        onClick={start}
+      >
+        {t("dab.scan")}
+      </button>
+    </div>
+  );
+}
+
+/** Folders, playable items, search and paging. */
+function Menu({ snapshot, controller }: Props) {
   const t = useT();
   const { browse, connection, power, modeKey } = snapshot;
   const online = connection === "online";
@@ -21,7 +93,6 @@ export function Browse({ snapshot, controller }: Props) {
     if (browse.status === "idle" || browse.modeKey !== modeKey) void controller.browse.open();
   }, [online, power, browse.status, browse.modeKey, modeKey, controller]);
 
-  if (power === false) return <p className="muted">{t("browse.standby")}</p>;
   switch (browse.status) {
     case "idle":
     case "loading":
