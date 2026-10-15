@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import { currentModeId } from "../radio/controller.ts";
 import { useRadio, useRegistry } from "../radio/hooks.ts";
@@ -5,6 +6,7 @@ import { Icon } from "./Icon.tsx";
 import { Library } from "./Library.tsx";
 import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
+import { Settings } from "./Settings.tsx";
 import { statusLine } from "./status.ts";
 import { Transport } from "./Transport.tsx";
 import { Tuner } from "./Tuner.tsx";
@@ -14,10 +16,17 @@ export function RadioView({ id }: { id: string }) {
   const t = useT();
   const registry = useRegistry();
   const radio = useRadio(id);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsButton = useRef<HTMLButtonElement>(null);
   if (!radio) return null;
   const { snapshot, controller } = radio;
   const { text, tone } = statusLine(snapshot, t);
   const canPower = snapshot.connection === "online" && snapshot.power !== undefined;
+
+  function closeSettings() {
+    setShowSettings(false);
+    requestAnimationFrame(() => settingsButton.current?.focus());
+  }
 
   function forget() {
     if (window.confirm(t("radio.forget.confirm", { name: snapshot.name }))) registry.remove(id);
@@ -33,31 +42,48 @@ export function RadioView({ id }: { id: string }) {
             {text}
           </p>
         </div>
-        <button
-          type="button"
-          className={`button power-button${snapshot.power ? " button--ghost" : ""}`}
-          disabled={!canPower}
-          aria-pressed={snapshot.power === true}
-          onClick={() => void controller.setPower(!snapshot.power)}
-        >
-          <Icon name="power" size={20} />
-          {snapshot.power ? t("power.standby") : t("power.on")}
-        </button>
+        <div className="radio-header__actions">
+          <button
+            ref={settingsButton}
+            type="button"
+            className="icon-button"
+            aria-label={t("settings.open")}
+            title={t("settings.open")}
+            aria-pressed={showSettings}
+            onClick={() => (showSettings ? closeSettings() : setShowSettings(true))}
+          >
+            <Icon name="settings" />
+          </button>
+          <button
+            type="button"
+            className={`button power-button${snapshot.power ? " button--ghost" : ""}`}
+            disabled={!canPower}
+            aria-pressed={snapshot.power === true}
+            onClick={() => void controller.setPower(!snapshot.power)}
+          >
+            <Icon name="power" size={20} />
+            {snapshot.power ? t("power.standby") : t("power.on")}
+          </button>
+        </div>
       </header>
 
       <Notices snapshot={snapshot} controller={controller} />
 
-      <div className="radio-grid">
-        <div className="card player">
-          <NowPlaying snapshot={snapshot} />
-          {snapshot.tuner && snapshot.power !== false && currentModeId(snapshot) === "FM" && (
-            <Tuner tuner={snapshot.tuner} snapshot={snapshot} controller={controller} />
-          )}
-          <Transport snapshot={snapshot} controller={controller} />
-          <VolumeControl snapshot={snapshot} controller={controller} />
+      {showSettings ? (
+        <Settings snapshot={snapshot} controller={controller} onClose={closeSettings} />
+      ) : (
+        <div className="radio-grid">
+          <div className="card player">
+            <NowPlaying snapshot={snapshot} />
+            {snapshot.tuner && snapshot.power !== false && currentModeId(snapshot) === "FM" && (
+              <Tuner tuner={snapshot.tuner} snapshot={snapshot} controller={controller} />
+            )}
+            <Transport snapshot={snapshot} controller={controller} />
+            <VolumeControl snapshot={snapshot} controller={controller} />
+          </div>
+          <Library snapshot={snapshot} controller={controller} />
         </div>
-        <Library snapshot={snapshot} controller={controller} />
-      </div>
+      )}
 
       <footer className="radio-footer">
         <span className="muted">

@@ -78,6 +78,13 @@ const PATHS = {
   ),
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
+  settings: (
+    <>
+      <path d="M4 7h8.5M17.5 7H20M4 17h2.5M11.5 17H20" />
+      <circle cx="15" cy="7" r="2.5" />
+      <circle cx="9" cy="17" r="2.5" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   chevronDown: <path d="M6 9l6 6 6-6" />,
   chevronRight: <path d="M9.5 6l6 6-6 6" />,

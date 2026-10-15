@@ -21,6 +21,9 @@ const SAMPLE_VALUES = {
   station: "Radio Muga",
   slot: 2,
   mhz: "93.20",
+  minutes: 30,
+  key: 4,
+  ssid: "MugaNet",
 };
 
 describe("messages", () => {

@@ -73,6 +73,7 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
   /** Top menus by mode id; a DAB scan and prune change them. */
   const menus = new Map(Object.entries(options.modes).map(([id, mode]) => [id, mode.menu ?? []]));
   let scanGeneration = 0;
+  let sleepGeneration = 0;
   /** Station names the last finished scan received; a prune keeps only these. */
   let receivable: Set<string> | undefined;
 
@@ -233,6 +234,22 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
     return undefined;
   };
 
+  /** The sleep timer counts down once a second and puts the radio in standby at 0. */
+  const startSleep = () => {
+    const id = ++sleepGeneration;
+    const tick = () =>
+      options.later(1_000, () => {
+        if (id !== sleepGeneration) return;
+        const left = Number(state.get("netRemote.sys.sleep") ?? 0) - 1;
+        state.set("netRemote.sys.sleep", Math.max(0, left));
+        if (left > 0) return tick();
+        state.set("netRemote.sys.power", "OFF");
+        state.set("netRemote.play.status", "IDLE");
+        navOff();
+      });
+    tick();
+  };
+
   if (state.get("netRemote.nav.state") === 1) navOn();
   else navOff();
 
@@ -283,6 +300,10 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
           tune(Number(value));
           return undefined;
         }
+        case "netRemote.sys.sleep":
+          sleepGeneration++;
+          if (Number(value) > 0) startSleep();
+          return undefined;
         case "netRemote.nav.action.dabScan":
           if (value === 1) return startScan();
           stopScan();

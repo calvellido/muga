@@ -162,6 +162,28 @@ describe("App", () => {
     expect(await within(panel).findByRole("button", { name: /Atlantic Hits/ })).toBeTruthy();
   });
 
+  it("opens settings, renames the speaker and sets the sleep timer and EQ", async () => {
+    const { sim, user } = await addSimulatedSpeaker();
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Settings" })).toBeTruthy();
+    expect(await screen.findByText("Wi-Fi: MugaNet")).toBeTruthy();
+
+    const name = screen.getByLabelText("Speaker name");
+    await user.clear(name);
+    await user.type(name, "Kitchen");
+    await user.click(screen.getByRole("button", { name: "Rename" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
+    expect(sim.get("netRemote.sys.info.friendlyName")).toBe("Kitchen");
+
+    await user.click(screen.getByRole("button", { name: "30 min" }));
+    expect(await screen.findByText("Standby in 30 minutes.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Jazz" }));
+    await waitFor(() => expect(sim.get("netRemote.sys.audio.eqPreset")).toBe(3));
+
+    await user.click(screen.getByRole("button", { name: "Back to the player" }));
+    expect(await screen.findByRole("tab", { name: "Sources" })).toBeTruthy();
+  });
+
   it("explains why a speaker couldn't be added", async () => {
     sim = await startSimulator({ pin: "4321" });
     const user = userEvent.setup();
