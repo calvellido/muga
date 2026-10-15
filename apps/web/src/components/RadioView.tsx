@@ -1,4 +1,5 @@
 import { useT } from "../i18n/index.tsx";
+import { currentModeId } from "../radio/controller.ts";
 import { useRadio, useRegistry } from "../radio/hooks.ts";
 import { Icon } from "./Icon.tsx";
 import { Library } from "./Library.tsx";
@@ -6,6 +7,7 @@ import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
 import { statusLine } from "./status.ts";
 import { Transport } from "./Transport.tsx";
+import { Tuner } from "./Tuner.tsx";
 import { VolumeControl } from "./VolumeControl.tsx";
 
 export function RadioView({ id }: { id: string }) {
@@ -48,6 +50,9 @@ export function RadioView({ id }: { id: string }) {
       <div className="radio-grid">
         <div className="card player">
           <NowPlaying snapshot={snapshot} />
+          {snapshot.tuner && snapshot.power !== false && currentModeId(snapshot) === "FM" && (
+            <Tuner tuner={snapshot.tuner} snapshot={snapshot} controller={controller} />
+          )}
           <Transport snapshot={snapshot} controller={controller} />
           <VolumeControl snapshot={snapshot} controller={controller} />
         </div>

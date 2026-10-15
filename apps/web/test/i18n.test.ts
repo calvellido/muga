@@ -20,6 +20,7 @@ const SAMPLE_VALUES = {
   total: 30,
   station: "Radio Muga",
   slot: 2,
+  mhz: "93.20",
 };
 
 describe("messages", () => {

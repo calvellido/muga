@@ -15,6 +15,8 @@ export interface BehaviorOptions {
   modes: Record<string, SimModeProfile>;
   /** How long `nav.status` stays WAITING after each navigation step. */
   navDelayMs: number;
+  /** One DAB scan step (one station found). */
+  dabScanStepMs: number;
   /** Runs `fn` later; the simulator cancels pending calls when it closes. */
   later(ms: number, fn: () => void): void;
 }
@@ -59,17 +61,27 @@ function slug(name: string): string {
  * - while `nav.state` is OFF (also after a source change or standby), the nav nodes are blocked;
  * - a source without a menu (no `nav.caps` navigation bit, or an empty top level) reports
  *   FATAL_ERR, but its presets can still be read.
+ *
+ * FM tunes by `play.frequency` (kHz) and seeks between the profile's stations with NEXT /
+ * PREVIOUS. A DAB scan finds the profile's `scan` stations one step at a time, adds them to the
+ * menu, and a prune then keeps only those.
  */
 export function createBehaviors(state: SimState, options: BehaviorOptions): Behaviors {
   /** The list shown at each depth; empty while navigation is off. */
   let stack: SimMenuItem[][] = [];
   let generation = 0;
+  /** Top menus by mode id; a DAB scan and prune change them. */
+  const menus = new Map(Object.entries(options.modes).map(([id, mode]) => [id, mode.menu ?? []]));
+  let scanGeneration = 0;
+  /** Station names the last finished scan received; a prune keeps only these. */
+  let receivable: Set<string> | undefined;
 
-  const currentMode = () => {
+  const currentModeId = () => {
     const key = state.get("netRemote.sys.mode");
-    const id = state.list("netRemote.sys.caps.validModes").find((m) => m.key === key)?.id;
-    return options.modes[String(id)];
+    return String(state.list("netRemote.sys.caps.validModes").find((m) => m.key === key)?.id);
   };
+  const currentMode = () => options.modes[currentModeId()];
+  const currentMenu = () => menus.get(currentModeId()) ?? [];
 
   const settle = (status: string) => {
     const current = ++generation;
@@ -114,7 +126,7 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
   const navOn = () => {
     state.setBlocked(NAV_NODES, false);
     const caps = Number(state.get("netRemote.nav.caps") ?? 0);
-    const menu = currentMode()?.menu ?? [];
+    const menu = currentMenu();
     if ((caps & NAV_CAP_NAVIGATION) === 0 || menu.length === 0) {
       generation++;
       stack = [];
@@ -152,7 +164,7 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
         const term = String(state.get("netRemote.nav.searchTerm") ?? "")
           .trim()
           .toLowerCase();
-        stack.push(term ? search(currentMode()?.menu ?? [], term) : []);
+        stack.push(term ? search(currentMenu(), term) : []);
         break;
       }
       default:
@@ -170,6 +182,57 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
     return undefined;
   };
 
+  const tune = (khz: number) => {
+    const station = currentMode()?.stations?.find((s) => s.frequency === khz);
+    play(station?.name ?? `${(khz / 1000).toFixed(2)}MHz`, station?.text ?? "");
+  };
+
+  /** Next station above (1) or below (-1) the tuned frequency, wrapping around the band. */
+  const seek = (direction: 1 | -1) => {
+    const current = Number(state.get("netRemote.play.frequency") ?? 0);
+    const sorted = [...(currentMode()?.stations ?? [])].sort((a, b) => a.frequency - b.frequency);
+    if (sorted.length === 0) return;
+    const ahead =
+      direction > 0
+        ? sorted.find((s) => s.frequency > current)
+        : sorted.findLast((s) => s.frequency < current);
+    const target = ahead ?? (direction > 0 ? sorted[0] : sorted.at(-1));
+    if (!target) return;
+    state.set("netRemote.play.frequency", target.frequency);
+    tune(target.frequency);
+  };
+
+  const stopScan = () => {
+    scanGeneration++;
+    state.set("netRemote.nav.action.dabScan", "IDLE");
+  };
+
+  const startScan = () => {
+    if (currentModeId() !== "DAB") {
+      state.set("netRemote.nav.action.dabScan", "IDLE");
+      return "FS_FAIL";
+    }
+    navOff();
+    const results = currentMode()?.scan ?? currentMenu();
+    const id = ++scanGeneration;
+    // Even an empty band takes a few steps to scan.
+    const steps = Math.max(results.length, 3);
+    state.set("netRemote.nav.dabScanUpdate", 0);
+    const step = (index: number) =>
+      options.later(options.dabScanStepMs, () => {
+        if (id !== scanGeneration) return;
+        if (index < results.length) state.set("netRemote.nav.dabScanUpdate", index + 1);
+        if (index + 1 < steps) return step(index + 1);
+        const menu = menus.get("DAB") ?? [];
+        const known = new Set(menu.map((item) => item.name));
+        menus.set("DAB", [...menu, ...results.filter((item) => !known.has(item.name))]);
+        receivable = new Set(results.map((item) => item.name));
+        state.set("netRemote.nav.action.dabScan", "IDLE");
+      });
+    step(0);
+    return undefined;
+  };
+
   if (state.get("netRemote.nav.state") === 1) navOn();
   else navOff();
 
@@ -178,20 +241,26 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
       switch (path) {
         case "netRemote.sys.power":
           state.set("netRemote.play.status", value === 1 ? "PLAYING" : "IDLE");
-          if (value !== 1) navOff();
+          if (value !== 1) {
+            navOff();
+            stopScan();
+          }
           return undefined;
         case "netRemote.sys.mode": {
           const mode = state.list("netRemote.sys.caps.validModes").find((m) => m.key === value);
           const label = String(mode?.label ?? `Mode ${value}`);
           for (const [node, v] of Object.entries(currentMode()?.values ?? {})) state.set(node, v);
           play(label, `Listening to ${label}`);
+          if (currentModeId() === "FM") tune(Number(state.get("netRemote.play.frequency") ?? 0));
           state.set("netRemote.nav.preset.currentPreset", NO_PRESET);
           navOff();
+          stopScan();
           return undefined;
         }
         case "netRemote.play.control": {
           const status = { 0: "STOPPED", 1: "PLAYING", 2: "PAUSED" }[value as 0 | 1 | 2];
           if (status) state.set("netRemote.play.status", status);
+          else if (currentModeId() === "FM") seek(value === 3 ? 1 : -1);
           else {
             // NEXT / PREVIOUS: pretend the track changed.
             const text = String(state.get("netRemote.play.info.text"));
@@ -205,6 +274,28 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
         case "netRemote.nav.state":
           if (value === 1) navOn();
           else navOff();
+          return undefined;
+        case "netRemote.play.frequency": {
+          if (currentModeId() !== "FM") return undefined;
+          const lower = Number(state.get("netRemote.sys.caps.fmFreqRange.lower"));
+          const upper = Number(state.get("netRemote.sys.caps.fmFreqRange.upper"));
+          if (Number(value) < lower || Number(value) > upper) return "FS_FAIL";
+          tune(Number(value));
+          return undefined;
+        }
+        case "netRemote.nav.action.dabScan":
+          if (value === 1) return startScan();
+          stopScan();
+          return undefined;
+        case "netRemote.nav.action.dabPrune":
+          if (value === 1 && receivable) {
+            const keep = receivable;
+            menus.set(
+              "DAB",
+              (menus.get("DAB") ?? []).filter((item) => keep.has(item.name)),
+            );
+          }
+          state.set("netRemote.nav.action.dabPrune", "IDLE");
           return undefined;
         case "netRemote.nav.action.navigate":
           return navigate(Number(value));

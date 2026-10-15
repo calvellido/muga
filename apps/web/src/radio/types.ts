@@ -87,6 +87,21 @@ export interface PlayState {
   repeat: RepeatMode;
 }
 
+/** FM band and tuning, in kHz (`sys.caps.fmFreqRange.*`, `play.frequency`). */
+export interface TunerState {
+  lower: number;
+  upper: number;
+  step: number;
+  frequency: number | undefined;
+}
+
+export interface DabScanState {
+  /** pruning: removing stations that can't be received, which UNDOK does after every scan. */
+  status: "idle" | "scanning" | "pruning" | "done" | "cancelled" | "error";
+  /** Stations found so far (`nav.dabScanUpdate`). */
+  found: number;
+}
+
 export interface ActionError {
   action: string;
   kind: FsapiErrorKind | "unknown";
@@ -113,6 +128,9 @@ export interface RadioSnapshot {
   currentPreset: number | undefined;
   presets: PresetsState;
   browse: BrowseState;
+  /** Known once the radio has been on FM. */
+  tuner: TunerState | undefined;
+  dabScan: DabScanState;
   lastError: ActionError | undefined;
 }
 
@@ -127,4 +145,5 @@ export interface RadioContext {
   fail(action: string, error: unknown): void;
   /** Something else is playing now: re-read the track details soon. */
   playbackChanged(): void;
+  now(): number;
 }

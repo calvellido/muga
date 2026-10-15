@@ -20,6 +20,19 @@ export interface SimModeProfile {
   values?: Record<string, number | string>;
   /** The source's top menu, served as `nav.list` once navigation is on. */
   menu?: SimMenuItem[];
+  /** FM: stations to tune to and seek between. Other frequencies play as plain "<MHz>MHz". */
+  stations?: SimFmStation[];
+  /** DAB: what a scan finds (and keeps after pruning). Default: the menu. */
+  scan?: SimMenuItem[];
+}
+
+export interface SimFmStation {
+  /** kHz */
+  frequency: number;
+  /** RDS programme service name. */
+  name: string;
+  /** RDS radiotext. */
+  text?: string;
 }
 
 export interface SimMenuItem {
@@ -141,6 +154,11 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.play.info.graphicUri": "",
     "netRemote.play.info.duration": 0,
     "netRemote.play.position": 0,
+    // FM band as an ICD2018 reports it (kHz).
+    "netRemote.sys.caps.fmFreqRange.lower": 87_500,
+    "netRemote.sys.caps.fmFreqRange.upper": 108_000,
+    "netRemote.sys.caps.fmFreqRange.stepSize": 50,
+    "netRemote.play.frequency": 93_200,
   },
   lists: {
     "netRemote.sys.caps.validModes": [
@@ -184,6 +202,7 @@ export const DEFAULT_PROFILE: SimProfile = {
       },
     },
     DAB: {
+      scan: DAB_STATIONS.slice(0, 12),
       values: {
         "netRemote.nav.caps": BROWSE_AND_PRESETS,
         "netRemote.play.caps": STOP | ADD_PRESET,
@@ -191,7 +210,17 @@ export const DEFAULT_PROFILE: SimProfile = {
       menu: DAB_STATIONS,
     },
     FM: {
-      values: { "netRemote.nav.caps": PRESETS_ONLY, "netRemote.play.caps": STOP | ADD_PRESET },
+      stations: [
+        { frequency: 88_600, name: "Muga FM", text: "Music from the border" },
+        { frequency: 93_200, name: "Frontera", text: "News on the hour" },
+        { frequency: 99_100, name: "Harbour", text: "Talk and weather" },
+        { frequency: 104_800, name: "Atlantic", text: "Hits all day" },
+      ],
+      // Next / previous seek, as on an ICD2018.
+      values: {
+        "netRemote.nav.caps": PRESETS_ONLY,
+        "netRemote.play.caps": NEXT | PREVIOUS | ADD_PRESET,
+      },
     },
     BLUETOOTH: {
       values: { "netRemote.nav.caps": 0, "netRemote.play.caps": PAUSE | NEXT | PREVIOUS },

@@ -27,6 +27,8 @@ export interface SimulatorOptions {
   behaviors?: boolean;
   /** How long `nav.status` reads WAITING after each navigation step. Default 0. */
   navDelayMs?: number;
+  /** One DAB scan step (one station found). Default 300 ms. */
+  dabScanStepMs?: number;
 }
 
 export interface SimRequest {
@@ -250,6 +252,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     ? createBehaviors(state, {
         modes: profile.modes,
         navDelayMs: options.navDelayMs ?? 0,
+        dabScanStepMs: options.dabScanStepMs ?? 300,
         later(ms, fn) {
           const timer = setTimeout(() => {
             timers.delete(timer);
