@@ -79,6 +79,25 @@ const PATHS = {
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   chevronDown: <path d="M6 9l6 6 6-6" />,
+  chevronRight: <path d="M9.5 6l6 6-6 6" />,
+  back: <path d="M19 12H5.5M11 6l-6 6 6 6" />,
+  arrowUp: <path d="M12 19V5.5M6 11l6-6 6 6" />,
+  arrowDown: <path d="M12 5v13.5M6 13l6 6 6-6" />,
+  folder: (
+    <path d="M3.5 7.5a2 2 0 0 1 2-2h3.7c.6 0 1.1.3 1.5.7l1.3 1.8h6.5a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />
+  ),
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6" />
+      <path d="M15 15l5 5" />
+    </>
+  ),
+  save: (
+    <>
+      <path d="M7 3.5h10a1 1 0 0 1 1 1V20l-6-4-6 4V4.5a1 1 0 0 1 1-1z" />
+      <path d="M12 7.5v5M9.5 10h5" />
+    </>
+  ),
   radio: (
     <>
       <rect x="3" y="8" width="18" height="12.5" rx="2.5" />
@@ -105,10 +124,13 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
+/** Icons that point along the reading direction; mirrored in right-to-left layouts. */
+const DIRECTIONAL = new Set<IconName>(["chevronRight", "back"]);
+
 export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
   return (
     <svg
-      className="icon"
+      className={DIRECTIONAL.has(name) ? "icon icon--directional" : "icon"}
       viewBox="0 0 24 24"
       width={size}
       height={size}

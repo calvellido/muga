@@ -6,7 +6,7 @@ Not affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 ## Status
 
-Phase 1 (protocol core, simulator and CLI) and the first hub-less web app (Phase 1b) are done.
+Phase 1 (protocol core, simulator and CLI) and the first hub-less web app (Phase 1b) are done. Phase 4 is under way: menu browsing and preset editing are in; tuner and settings come next.
 
 | Package | What it is |
 | --- | --- |
@@ -29,6 +29,7 @@ pnpm muga info 127.0.0.1:8099      # …or a real radio: pnpm muga info <radio-i
 pnpm muga get 127.0.0.1:8099 play.status
 pnpm muga set 127.0.0.1:8099 sys.audio.volume 12
 pnpm muga list 127.0.0.1:8099 sys.caps.validModes
+pnpm muga browse 127.0.0.1:8099 2 0  # the current source's menu, after entering folders 2 then 0
 pnpm muga nodes multiroom          # search the catalog offline
 pnpm muga --help
 ```
@@ -48,7 +49,8 @@ Add a real radio by its IP address (for example `192.0.2.10`) and PIN (usually `
 - volume and mute;
 - standby and on;
 - switching source;
-- recalling presets.
+- browsing the source's menu: folders, search, long lists, playing an item;
+- presets: recall, save what's playing into a slot, delete, and reorder (where the radio allows it).
 
 Using the library:
 
@@ -68,6 +70,7 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 ## Working with real radios
 
 - FSAPI is plain HTTP with the PIN in the URL; the default PIN is `1234`. The radios answer with `Access-Control-Allow-Origin: *`, which is what makes a hub-less web app possible (see ADR 0001).
+- Browsing and presets move the radio's menu (`nav.state`, `nav.action.*`). That's harmless, but someone using the radio's own menu at the same time will see it jump, as with UNDOK.
 - Plain GET/SET needs no session. `muga watch` and `NotificationSession` create the radio's **single** session, so other controllers (e.g. UNDOK) lose live updates while they run.
 - Writes are validated against the catalog and refused locally if invalid. Don't point automated tests at real radios for factory reset, firmware update or network nodes.
 

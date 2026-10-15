@@ -8,7 +8,7 @@ import {
   type NodeDef,
   type NodePath,
 } from "@muga/fsapi-core";
-import { applyBehavior, type SimState } from "./behaviors.ts";
+import { createBehaviors, type SimState } from "./behaviors.ts";
 import { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
 
 export interface SimulatorOptions {
@@ -25,6 +25,8 @@ export interface SimulatorOptions {
   supportsMultiple?: boolean;
   /** Apply radio-like side effects (e.g. selecting a preset changes what is playing). Default true. */
   behaviors?: boolean;
+  /** How long `nav.status` reads WAITING after each navigation step. Default 0. */
+  navDelayMs?: number;
 }
 
 export interface SimRequest {
@@ -153,10 +155,11 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const pin = options.pin ?? "1234";
   const notifyHoldMs = options.notifyHoldMs ?? 5_000;
   const supportsMultiple = options.supportsMultiple ?? true;
-  const behaviors = options.behaviors ?? true;
+  const withBehaviors = options.behaviors ?? true;
   const profile: SimProfile = {
     values: { ...DEFAULT_PROFILE.values, ...options.profile?.values },
     lists: { ...DEFAULT_PROFILE.lists, ...options.profile?.lists },
+    modes: { ...DEFAULT_PROFILE.modes, ...options.profile?.modes },
     missingNodes: options.profile?.missingNodes ?? DEFAULT_PROFILE.missingNodes,
   };
 
@@ -183,6 +186,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     );
   }
   const missing = new Set(profile.missingNodes.map((p) => resolve(p).path));
+  const blocked = new Set<NodePath>();
 
   let sessionId: string | undefined;
   const pending = new Map<NodePath, string>();
@@ -233,7 +237,28 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
         items.map((item) => ({ ...item })),
       );
     },
+    setBlocked(paths, isBlocked) {
+      for (const path of paths) {
+        if (isBlocked) blocked.add(resolve(path).path);
+        else blocked.delete(resolve(path).path);
+      }
+    },
   };
+
+  const timers = new Set<NodeJS.Timeout>();
+  const behaviors = withBehaviors
+    ? createBehaviors(state, {
+        modes: profile.modes,
+        navDelayMs: options.navDelayMs ?? 0,
+        later(ms, fn) {
+          const timer = setTimeout(() => {
+            timers.delete(timer);
+            fn();
+          }, ms);
+          timers.add(timer);
+        },
+      })
+    : undefined;
 
   /** Known node, implemented by this simulated model. */
   const known = (node: string | undefined) => {
@@ -244,6 +269,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const getEntryXml = (node: string): { status: string; value?: string } => {
     const entry = known(node);
     if (!entry) return { status: "FS_NODE_DOES_NOT_EXIST" };
+    if (blocked.has(entry.path)) return { status: "FS_NODE_BLOCKED" };
     if (entry.def.type === "list") return { status: "FS_FAIL" };
     return { status: "FS_OK", value: valueXml(entry.def.type, scalars.get(entry.path)) };
   };
@@ -256,14 +282,19 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     if ("status" in outcome) return outcome.status;
     scalars.set(entry.path, outcome.value);
     notify(entry.path, entry.def);
-    if (behaviors) applyBehavior(state, entry.path, outcome.value);
-    return "FS_OK";
+    return behaviors?.apply(entry.path, outcome.value) || "FS_OK";
   };
 
+  /** Declared fields first, then any extra ones the item carries (e.g. a preset's `url`). */
   const itemXml = (def: NodeDef, item: SimListItem) => {
-    const fields = (def.fields ?? [])
-      .filter((f) => f.name.toLowerCase() !== "key")
-      .map((f) => `<field name="${f.name.toLowerCase()}">${valueXml(f.type, item[f.name])}</field>`)
+    const declared = (def.fields ?? []).filter((f) => f.name.toLowerCase() !== "key");
+    const names = new Set(declared.map((f) => f.name));
+    const extra = Object.keys(item).filter((name) => name !== "key" && !names.has(name));
+    const fields = [
+      ...declared.map((f) => [f.name, valueXml(f.type, item[f.name])]),
+      ...extra.map((name) => [name, valueXml("c8", item[name])]),
+    ]
+      .map(([name, xml]) => `<field name="${String(name).toLowerCase()}">${xml}</field>`)
       .join("");
     return `<item key="${item.key}">${fields}</item>\n`;
   };
@@ -326,6 +357,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
       case "LIST_GET_NEXT": {
         const entry = known(node);
         if (!entry) return send(res, 200, fsapi("FS_NODE_DOES_NOT_EXIST"));
+        if (blocked.has(entry.path)) return send(res, 200, fsapi("FS_NODE_BLOCKED"));
         if (entry.def.type !== "list") return send(res, 200, fsapi("FS_FAIL"));
         const startKey = Number(start ?? -1);
         const maxItems = Math.max(1, Number(params.get("maxItems") ?? 20));
@@ -409,6 +441,8 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     requests,
     ...state,
     close() {
+      for (const timer of timers) clearTimeout(timer);
+      timers.clear();
       endWaiter(404);
       return new Promise<void>((done) => {
         server.close(() => done());

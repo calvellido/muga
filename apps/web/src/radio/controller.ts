@@ -1,17 +1,19 @@
 import {
   type FetchLike,
   FsapiClient,
-  FsapiError,
   isFsapiError,
+  type NavOptions,
   type ScalarPath,
 } from "@muga/fsapi-core";
-import { hasCap, NavCap, PlayCap } from "./caps.ts";
+import { BrowseSession, initialBrowse } from "./browse.ts";
+import { hasCap, PlayCap } from "./caps.ts";
+import { PresetManager } from "./presets.ts";
 import type {
   ActionError,
   PlayAction,
   PlayState,
-  PresetsState,
   RadioConfig,
+  RadioContext,
   RadioSnapshot,
   RepeatMode,
   SourceMode,
@@ -47,6 +49,8 @@ const TRACK_NODES = [
   "netRemote.play.shuffle",
   "netRemote.play.repeat",
   "netRemote.nav.preset.currentPreset",
+  // Per source: whether it can be browsed and has (editable) presets.
+  "netRemote.nav.caps",
 ] as const satisfies readonly ScalarPath[];
 
 /** Read for radios that aren't selected, for the speaker list. */
@@ -115,6 +119,7 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     navCaps: undefined,
     currentPreset: undefined,
     presets: { status: "idle", items: [] },
+    browse: initialBrowse(),
     lastError: undefined,
   };
 }
@@ -139,6 +144,11 @@ function asRepeat(value: unknown): RepeatMode {
 }
 
 export class RadioController {
+  /** Preset list of the current source. */
+  readonly presets: PresetManager;
+  /** Menu browsing of the current source. */
+  readonly browse: BrowseSession;
+
   private snapshot: RadioSnapshot;
   private readonly listeners = new Set<() => void>();
   private readonly client: FsapiClient;
@@ -173,6 +183,21 @@ export class RadioController {
       navTimeoutMs: options.navTimeoutMs ?? 30_000,
       now: options.now ?? Date.now,
     };
+    const nav: NavOptions = { pollMs: this.opts.navPollMs, timeoutMs: this.opts.navTimeoutMs };
+    const context: RadioContext = {
+      client: this.client,
+      nav,
+      snapshot: () => this.snapshot,
+      update: (patch) => this.update(patch),
+      run: (action, task) => this.run(action, task),
+      fail: (action, error) => this.fail(action, error),
+      playbackChanged: () => {
+        this.lastTrackKey = "";
+        this.schedule(300);
+      },
+    };
+    this.presets = new PresetManager(context);
+    this.browse = new BrowseSession(context);
   }
 
   // Store interface (for useSyncExternalStore)
@@ -229,6 +254,7 @@ export class RadioController {
   setPower(on: boolean): Promise<boolean> {
     return this.run("power", async () => {
       await this.client.set("netRemote.sys.power", on ? "ON" : "OFF");
+      if (!on) this.browse.invalidate();
       this.update({ power: on });
     });
   }
@@ -318,44 +344,9 @@ export class RadioController {
         this.update({ power: true });
       }
       await this.client.set("netRemote.sys.mode", key);
-      this.update({ modeKey: key, presets: { status: "idle", items: [] } });
-      this.lastTrackKey = "";
-    });
-  }
-
-  async loadPresets(): Promise<void> {
-    if (this.snapshot.power === false) {
-      this.setPresets({ status: "standby", items: [] });
-      return;
-    }
-    this.setPresets({ status: "loading", items: this.snapshot.presets.items });
-    try {
-      const navCaps = await this.client.get("netRemote.nav.caps").catch((error: unknown) => {
-        if (isFsapiError(error, "status")) return undefined;
-        throw error;
-      });
-      this.update({ navCaps });
-      if (navCaps !== undefined && !hasCap(navCaps, NavCap.Presets)) {
-        this.setPresets({ status: "unsupported", items: [] });
-        return;
-      }
-      await this.ensureNavReady();
-      const items = await this.client.listAllItems("netRemote.nav.presets", { pageSize: 30 });
-      this.setPresets({ status: "ready", items });
-    } catch (error) {
-      if (isFsapiError(error, "status") && error.fsStatus === "FS_NODE_DOES_NOT_EXIST") {
-        this.setPresets({ status: "unsupported", items: [] });
-      } else {
-        this.setPresets({ status: "error", items: [] });
-        this.fail("presets", error);
-      }
-    }
-  }
-
-  selectPreset(key: number): Promise<boolean> {
-    return this.run("preset", async () => {
-      await this.client.set("netRemote.nav.action.selectPreset", key);
-      this.update({ currentPreset: key });
+      this.browse.invalidate();
+      // nav.caps differs per source; read it again with the track details.
+      this.update({ modeKey: key, navCaps: undefined, presets: { status: "idle", items: [] } });
       this.lastTrackKey = "";
     });
   }
@@ -410,7 +401,11 @@ export class RadioController {
       if (mute !== undefined) patch.muted = mute === "MUTE";
       if (modeKey !== undefined && previousMode !== undefined && modeKey !== previousMode) {
         patch.presets = { status: "idle", items: [] };
+        patch.navCaps = undefined;
+        this.browse.invalidate();
       }
+      // The radio forgets the menu position in standby.
+      if (patch.power === false && this.snapshot.power !== false) this.browse.invalidate();
       this.update(patch);
       this.updatePlay({
         status: values["netRemote.play.status"],
@@ -478,27 +473,9 @@ export class RadioController {
       shuffle: shuffle === "ON" || shuffle === 1,
       repeat: asRepeat(values["netRemote.play.repeat"]),
     });
-    this.update({ currentPreset: values["netRemote.nav.preset.currentPreset"] });
-  }
-
-  private async ensureNavReady(): Promise<void> {
-    const ready = (status: unknown) => status === "READY" || status === "READY_ROOT";
-    const status = await this.client.get("netRemote.nav.status");
-    if (ready(status)) return;
-    if (status !== "WAITING") await this.client.set("netRemote.nav.state", "ON");
-    const deadline = this.opts.now() + this.opts.navTimeoutMs;
-    while (this.opts.now() < deadline) {
-      const current = await this.client.get("netRemote.nav.status");
-      if (ready(current)) return;
-      if (current === "FAIL" || current === "FATAL_ERR") {
-        throw new FsapiError("status", `Navigation failed (${current})`, {
-          node: "netRemote.nav.status",
-        });
-      }
-      await new Promise((resolve) => setTimeout(resolve, this.opts.navPollMs));
-    }
-    throw new FsapiError("timeout", "Navigation did not become ready", {
-      node: "netRemote.nav.status",
+    this.update({
+      currentPreset: values["netRemote.nav.preset.currentPreset"],
+      navCaps: values["netRemote.nav.caps"] ?? this.snapshot.navCaps,
     });
   }
 
@@ -528,10 +505,6 @@ export class RadioController {
     else if (kind === "network" || kind === "timeout")
       this.update({ connection: "offline", lastError });
     else this.update({ lastError });
-  }
-
-  private setPresets(presets: PresetsState): void {
-    this.update({ presets });
   }
 
   private updatePlay(patch: Partial<PlayState>): void {

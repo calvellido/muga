@@ -1,4 +1,10 @@
-export { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
+export {
+  DEFAULT_PROFILE,
+  type SimListItem,
+  type SimMenuItem,
+  type SimModeProfile,
+  type SimProfile,
+} from "./profile.ts";
 export {
   type RadioSimulator,
   type SimRequest,

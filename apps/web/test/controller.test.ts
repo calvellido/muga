@@ -93,13 +93,13 @@ describe("RadioController", () => {
 
   it("loads presets after making navigation ready, and recalls one", async () => {
     const { sim, controller } = await setup();
-    await controller.loadPresets();
+    await controller.presets.load();
     expect(sim.get("netRemote.nav.state")).toBe(1);
     const { presets } = controller.getSnapshot();
     expect(presets.status).toBe("ready");
-    expect(presets.items.map((p) => p.name)).toEqual(["Radio Muga", "Frontera FM", ""]);
+    expect(presets.items.map((p) => p.name)).toEqual(["Radio Muga", "Frontera FM", "", ""]);
 
-    await controller.selectPreset(1);
+    await controller.presets.select(1);
     await controller.refreshNow();
     expect(controller.getSnapshot()).toMatchObject({
       currentPreset: 1,
@@ -111,7 +111,7 @@ describe("RadioController", () => {
     const { controller } = await setup({
       sim: { profile: { values: { "netRemote.nav.caps": 1 } } },
     });
-    await controller.loadPresets();
+    await controller.presets.load();
     expect(controller.getSnapshot().presets.status).toBe("unsupported");
   });
 
