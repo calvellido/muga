@@ -50,7 +50,7 @@ export interface MultiroomHost {
   controller(id: string): RadioController | undefined;
   activeId(): string | undefined;
   /** A client for a speaker that isn't saved: by its address, with the default PIN. */
-  connect(host: string): FsapiClient;
+  clientAt(host: string): FsapiClient;
 }
 
 export interface MultiroomDirectoryOptions {
@@ -183,7 +183,7 @@ export class MultiroomDirectory {
     return this.current;
   }
 
-  /** The saved speakers changed (added, removed, or now reachable): map the list again. */
+  /** The saved speakers changed (connected, forgotten, or now reachable): map the list again. */
   radiosChanged(): void {
     const ids = new Set(this.host.radios().map((r) => r.id));
     for (const id of this.without) if (!ids.has(id)) this.without.delete(id);
@@ -300,7 +300,7 @@ export class MultiroomDirectory {
 
   private clientFor(speaker: MultiroomSpeaker): FsapiClient {
     const controller = speaker.radioId ? this.host.controller(speaker.radioId) : undefined;
-    return controller?.client ?? this.host.connect(speaker.ip);
+    return controller?.client ?? this.host.clientAt(speaker.ip);
   }
 
   private async task(

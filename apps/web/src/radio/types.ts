@@ -12,7 +12,7 @@ export interface RadioConfig {
   /** IP, host:port or FSAPI base URL. */
   host: string;
   pin: string;
-  /** Name at the time the radio was added; the live name comes from the snapshot. */
+  /** Name at the time the radio was connected; the live name comes from the snapshot. */
   name: string;
 }
 

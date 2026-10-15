@@ -9,7 +9,7 @@ A multiroom group is one speaker, the **server**, streaming to up to four **clie
 ## Decisions
 
 1. **The network is read from one saved speaker.** A directory reads `listAll` from the selected speaker, or else from any saved speaker that is online. It checks `listAllVersion` every 10 s and reads the list again when the version changes, or after 60 s anyway. A radio answering FS_NODE_DOES_NOT_EXIST has no multiroom and isn't asked again. If the list leaves out the radio that was asked, Muga adds it from that radio's `group.*` nodes. Whether real radios list themselves is unverified.
-2. **Saved speakers are matched to list entries by identity, then by address.** A multiroom UDN ends with the same part as the radio id and the UPnP UDN (`sys.info.dmruuid`), usually the MAC address. Muga compares those parts without case or separators, and falls back to the IP address. Unsaved speakers in the list can be added with the default PIN: discovery without SSDP.
+2. **Saved speakers are matched to list entries by identity, then by address.** A multiroom UDN ends with the same part as the radio id and the UPnP UDN (`sys.info.dmruuid`), usually the MAC address. Muga compares those parts without case or separators, and falls back to the IP address. Speakers in the list that aren't connected to Muga can be connected in one tap, with the default PIN: discovery without SSDP. They have a dashed outline, in a group or under "On your network" (ADR 0009).
 3. **Group changes follow UNDOK, waits included.**
 
    | Change | Requests |

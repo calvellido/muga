@@ -87,7 +87,7 @@ export class RadioRegistry {
         radios: () => this.snapshot.radios,
         controller: (id) => this.controller(id),
         activeId: () => this.snapshot.activeId,
-        connect: (host) =>
+        clientAt: (host) =>
           new FsapiClient({
             host,
             pin: DEFAULT_PIN,
@@ -170,8 +170,11 @@ export class RadioRegistry {
     };
   }
 
-  /** Probes and saves a radio. Adding a radio that's already saved updates its host and PIN. */
-  async add(host: string, pin = DEFAULT_PIN): Promise<RadioConfig> {
+  /**
+   * Connects a speaker: probes it and saves it to the speaker list. Connecting one that's already
+   * saved updates its host and PIN.
+   */
+  async connect(host: string, pin = DEFAULT_PIN): Promise<RadioConfig> {
     const config = await this.probe(host, pin);
     const existing = this.snapshot.radios.find((r) => r.id === config.id);
     if (existing) this.dropController(existing.id);
@@ -187,7 +190,8 @@ export class RadioRegistry {
     return config;
   }
 
-  remove(id: string): void {
+  /** Forgets a speaker: takes it off the speaker list. */
+  forget(id: string): void {
     this.leaveGroupView();
     this.dropController(id);
     const radios = this.snapshot.radios.filter((r) => r.id !== id);
@@ -269,9 +273,10 @@ export class RadioRegistry {
     if (this.seen.get(id) === key) return;
     this.seen.set(id, key);
     this.multiroom.radiosChanged();
-    if (connection === "online" && this.multiroom.getSnapshot().status !== "ready") {
-      void this.multiroom.refresh();
-    }
+    if (connection !== "online") return;
+    // A speaker the list doesn't have yet (just connected, or back online): read it again now.
+    const listed = this.multiroom.getSnapshot().status === "ready" && this.multiroom.speaker(id);
+    if (!listed) void this.multiroom.refresh(true);
   }
 
   private dropController(id: string): void {

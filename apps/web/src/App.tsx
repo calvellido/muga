@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AddRadioForm } from "./components/AddRadioForm.tsx";
+import { ConnectForm } from "./components/ConnectForm.tsx";
 import { GroupView } from "./components/GroupView.tsx";
 import { Icon } from "./components/Icon.tsx";
 import { DiscoveredSpeakers, RadioList } from "./components/RadioList.tsx";
@@ -33,7 +33,7 @@ function Welcome() {
         <p className="muted">{t("radios.empty.body")}</p>
       </div>
       <div className="card">
-        <AddRadioForm />
+        <ConnectForm />
       </div>
     </div>
   );
@@ -46,7 +46,7 @@ export function App() {
   const active = useRadio(activeId);
   const activeGroup = useMultiroom().groups.find((g) => g.id === activeGroupId);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   // At narrow widths the sidebar is an off-canvas drawer: keep it out of tab order and the
   // accessibility tree while closed.
   const wide = useMediaQuery("(min-width: 900px)");
@@ -79,7 +79,7 @@ export function App() {
 
   const closeDrawer = () => {
     setDrawerOpen(false);
-    setAdding(false);
+    setConnecting(false);
   };
 
   return (
@@ -125,18 +125,18 @@ export function App() {
           </div>
           <h2 className="sidebar__title">{t("radios.title")}</h2>
           <RadioList onSelect={closeDrawer} />
-          <DiscoveredSpeakers onAdded={closeDrawer} />
-          <div className="sidebar__add">
-            {adding ? (
-              <AddRadioForm onDone={closeDrawer} onCancel={() => setAdding(false)} />
+          <DiscoveredSpeakers onConnected={closeDrawer} />
+          <div className="sidebar__connect">
+            {connecting ? (
+              <ConnectForm onDone={closeDrawer} onCancel={() => setConnecting(false)} />
             ) : (
               <button
                 type="button"
                 className="button button--ghost"
-                onClick={() => setAdding(true)}
+                onClick={() => setConnecting(true)}
               >
                 <Icon name="plus" size={20} />
-                {t("radios.add")}
+                {t("radios.connect")}
               </button>
             )}
           </div>

@@ -4,24 +4,24 @@ import { type MessageId, type MessageValues, useT } from "../i18n/index.tsx";
 import { useRegistry } from "../radio/hooks.ts";
 
 function describeError(error: unknown, host: string): [MessageId, MessageValues] {
-  if (!isFsapiError(error)) return ["add.error.other", { message: String(error) }];
+  if (!isFsapiError(error)) return ["connect.error.other", { message: String(error) }];
   switch (error.kind) {
     case "pin":
-      return ["add.error.pin", {}];
+      return ["connect.error.pin", {}];
     case "network":
     case "timeout":
-      return ["add.error.unreachable", { host }];
+      return ["connect.error.unreachable", { host }];
     case "parse":
     case "not-found":
     case "http":
     case "status":
-      return ["add.error.notRadio", { host }];
+      return ["connect.error.notRadio", { host }];
     default:
-      return ["add.error.other", { message: error.message }];
+      return ["connect.error.other", { message: error.message }];
   }
 }
 
-export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCancel?: () => void }) {
+export function ConnectForm({ onDone, onCancel }: { onDone?: () => void; onCancel?: () => void }) {
   const t = useT();
   const registry = useRegistry();
   const id = useId();
@@ -37,7 +37,7 @@ export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCanc
     setBusy(true);
     setError(undefined);
     try {
-      await registry.add(target, pin.trim() || DEFAULT_PIN);
+      await registry.connect(target, pin.trim() || DEFAULT_PIN);
       setHost("");
       onDone?.();
     } catch (caught) {
@@ -48,12 +48,12 @@ export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCanc
   }
 
   return (
-    <form className="add-form" onSubmit={submit} aria-labelledby={`${id}-title`} noValidate>
-      <h2 id={`${id}-title`} className="add-form__title">
-        {t("add.title")}
+    <form className="connect-form" onSubmit={submit} aria-labelledby={`${id}-title`} noValidate>
+      <h2 id={`${id}-title`} className="connect-form__title">
+        {t("connect.title")}
       </h2>
       <div className="field">
-        <label htmlFor={`${id}-host`}>{t("add.host.label")}</label>
+        <label htmlFor={`${id}-host`}>{t("connect.host.label")}</label>
         <input
           id={`${id}-host`}
           name="host"
@@ -69,11 +69,11 @@ export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCanc
           aria-invalid={error ? true : undefined}
         />
         <span id={`${id}-host-hint`} className="hint">
-          {t("add.host.hint")}
+          {t("connect.host.hint")}
         </span>
       </div>
       <div className="field">
-        <label htmlFor={`${id}-pin`}>{t("add.pin.label")}</label>
+        <label htmlFor={`${id}-pin`}>{t("connect.pin.label")}</label>
         <input
           id={`${id}-pin`}
           name="pin"
@@ -84,7 +84,7 @@ export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCanc
           aria-describedby={`${id}-pin-hint`}
         />
         <span id={`${id}-pin-hint`} className="hint">
-          {t("add.pin.hint")}
+          {t("connect.pin.hint")}
         </span>
       </div>
       {error && (
@@ -94,11 +94,11 @@ export function AddRadioForm({ onDone, onCancel }: { onDone?: () => void; onCanc
       )}
       <div className="form-actions">
         <button type="submit" className="button" disabled={busy || !host.trim()}>
-          {busy ? t("add.adding") : t("add.submit")}
+          {busy ? t("connect.connecting") : t("connect.submit")}
         </button>
         {onCancel && (
           <button type="button" className="button button--ghost" onClick={onCancel} disabled={busy}>
-            {t("add.cancel")}
+            {t("connect.cancel")}
           </button>
         )}
       </div>

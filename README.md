@@ -36,7 +36,7 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - 📻 **FM tuner**: a dial, one-step buttons, and seek to the next station.
 - 📶 **DAB scan**, with progress. Stations that can no longer be received are removed afterwards.
 - 🏠 **Multiroom groups**: group speakers so they play the same thing in sync, with a group volume and a volume for each speaker. Add and remove speakers, rename, hand over to another speaker, or ungroup.
-- 🔎 **Finds your other speakers**: once one speaker is added, the others it knows of are one tap away.
+- 🔎 **Finds your other speakers**: once one speaker is connected, the others it knows of are one tap away.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
 - ℹ️ **Device info**, including the Wi-Fi network name, which UNDOK shows as "ERROR".
 - 📱 **Phone and desktop**, light and dark, and it installs as an app.
@@ -55,12 +55,12 @@ You need Node 22 or later and pnpm 10. No radio is needed to try it: Muga ships 
 ```sh
 pnpm install
 pnpm sim     # terminal 1: a simulated radio on 127.0.0.1:8099
-pnpm web     # terminal 2: open http://localhost:5173 and add 127.0.0.1:8099
+pnpm web     # terminal 2: open http://localhost:5173 and connect 127.0.0.1:8099
 ```
 
-To try multiroom, run `pnpm sim --speakers 4` instead: four simulated speakers on ports 8099 to 8102 that can be grouped. Add one of them and the others show up under "On your network".
+To try multiroom, run `pnpm sim --speakers 4` instead: four simulated speakers on ports 8099 to 8102 that can be grouped. Connect one of them and the others show up under "On your network".
 
-**With your own radios:** add each one by its IP address and PIN (usually `1234`). You'll find the IP address in the radio's network settings menu. The browser and the radios must be on the same network.
+**With your own radios:** connect each one by its IP address and PIN (usually `1234`). You'll find the IP address in the radio's network settings menu. The browser and the radios must be on the same network.
 
 **As an installed app:** `pnpm web:build && pnpm web:preview`, then open http://localhost:4173 and install it from the browser.
 

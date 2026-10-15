@@ -48,7 +48,7 @@ export function RadioView({ id }: { id: string }) {
   }
 
   function forget() {
-    if (window.confirm(t("radio.forget.confirm", { name: snapshot.name }))) registry.remove(id);
+    if (window.confirm(t("radio.forget.confirm", { name: snapshot.name }))) registry.forget(id);
   }
 
   return (
@@ -91,13 +91,15 @@ export function RadioView({ id }: { id: string }) {
           </button>
           <button
             type="button"
-            className={`button power-button${snapshot.power ? " button--ghost" : ""}`}
+            className={`button button--compact power-button${snapshot.power ? " button--ghost" : ""}`}
             disabled={!canPower}
             aria-pressed={snapshot.power === true}
             onClick={() => void controller.setPower(!snapshot.power)}
           >
             <Icon name="power" size={20} />
-            {snapshot.power ? t("power.standby") : t("power.on")}
+            <span className="button__text">
+              {snapshot.power ? t("power.standby") : t("power.on")}
+            </span>
           </button>
         </div>
       </header>

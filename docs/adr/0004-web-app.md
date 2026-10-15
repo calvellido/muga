@@ -31,5 +31,5 @@ Date: 2026-10-14. Status: accepted.
 ## Consequences
 
 - No live push: changes made elsewhere (radio buttons, UNDOK) appear within about 2 s.
-- No discovery yet: radios are added by IP.
+- No discovery yet: radios are connected by IP address.
 - happy-dom's fetch preflights simple GETs (real browsers don't), so the UI test injects a `node:http` transport.

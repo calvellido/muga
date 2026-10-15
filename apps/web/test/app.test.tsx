@@ -67,26 +67,26 @@ function renderApp() {
   );
 }
 
-/** Starts a simulator, adds it as a speaker and waits for its view. */
+/** Starts a simulator, connects it as a speaker and waits for its view. */
 async function addSimulatedSpeaker(options: SimulatorOptions = {}) {
   sim = await startSimulator(options);
   const user = userEvent.setup();
   renderApp();
   await user.type(screen.getByLabelText("IP address"), sim.host);
-  await user.click(screen.getByRole("button", { name: "Add speaker" }));
+  await user.click(screen.getByRole("button", { name: "Connect" }));
   expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
   return { sim, user };
 }
 
 describe("App", () => {
-  it("adds a speaker, controls playback and recalls a preset", async () => {
+  it("connects a speaker, controls playback and recalls a preset", async () => {
     sim = await startSimulator();
     const user = userEvent.setup();
     renderApp();
 
     expect(screen.getByRole("heading", { name: "No speakers yet" })).toBeTruthy();
     await user.type(screen.getByLabelText("IP address"), sim.host);
-    await user.click(screen.getByRole("button", { name: "Add speaker" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Muga Simulator" })).toBeTruthy();
     expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
@@ -208,13 +208,13 @@ describe("App", () => {
     const user = userEvent.setup();
     renderApp();
 
-    // Add one speaker; the others show up as found on the network.
+    // Connect one speaker; the others show up as found on the network.
     await user.type(screen.getByLabelText("IP address"), living.host);
-    await user.click(screen.getByRole("button", { name: "Add speaker" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Living room" })).toBeTruthy();
-    await user.click(await screen.findByRole("button", { name: "Add Kitchen to Muga" }));
+    await user.click(await screen.findByRole("button", { name: "Connect Kitchen" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
-    expect(await screen.findByRole("button", { name: "Add Bedroom to Muga" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Connect Bedroom" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /^Living room/ }));
     await user.click(
@@ -245,12 +245,12 @@ describe("App", () => {
     expect(kitchen.get("netRemote.multiroom.group.state")).toBe(0);
   });
 
-  it("explains why a speaker couldn't be added", async () => {
+  it("explains why a speaker couldn't be connected", async () => {
     sim = await startSimulator({ pin: "4321" });
     const user = userEvent.setup();
     renderApp();
     await user.type(screen.getByLabelText("IP address"), sim.host);
-    await user.click(screen.getByRole("button", { name: "Add speaker" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
     expect((await screen.findByRole("alert")).textContent).toBe("The radio rejected this PIN.");
   });
 });

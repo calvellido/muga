@@ -1,6 +1,6 @@
 import type { MultiroomDevice } from "@muga/fsapi-core";
 import { type SimulatedHome, startSimulatedHome, startSimulator } from "@muga/fsapi-sim";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { matchSpeaker } from "../src/radio/multiroom.ts";
 import { RadioRegistry } from "../src/radio/registry.ts";
 
@@ -13,7 +13,7 @@ afterEach(async () => {
   await Promise.all(homes.splice(0).map((h) => h.close()));
 });
 
-/** A home of `speakers`, of which the first `saved` are added to a registry. */
+/** A home of `speakers`, of which the first `saved` are connected to a registry. */
 async function setup(speakers = 3, saved = speakers, listsItself = true) {
   const home = await startSimulatedHome({ speakers, network: { listsItself } });
   homes.push(home);
@@ -23,7 +23,7 @@ async function setup(speakers = 3, saved = speakers, listsItself = true) {
   });
   registries.push(registry);
   const ids: string[] = [];
-  for (const sim of home.speakers.slice(0, saved)) ids.push((await registry.add(sim.host)).id);
+  for (const sim of home.speakers.slice(0, saved)) ids.push((await registry.connect(sim.host)).id);
   // Every speaker online, then the network read once.
   await Promise.all(ids.map((id) => registry.controller(id)?.refreshNow()));
   await registry.multiroom.refresh(true);
@@ -125,7 +125,7 @@ describe("MultiroomDirectory", () => {
     expect(server?.getSnapshot().mixer).toBeUndefined();
   });
 
-  it("adds the speaker it asked when its own list leaves it out", async () => {
+  it("includes the speaker it asked when its own list leaves it out", async () => {
     const { home, directory, ids } = await setup(2, 2, false);
     const [livingId = "", kitchenId = ""] = ids;
     // Read from Kitchen, the selected speaker: it lists only Living room.
@@ -210,6 +210,37 @@ describe("MultiroomDirectory", () => {
     expect(home.speakers[1]?.get("netRemote.multiroom.group.state")).toBe(0);
   });
 
+  it("reads the list again when a speaker it doesn't list yet comes online", async () => {
+    // Two networks, so each speaker lists only itself, and no timer reads it again.
+    const sims = await Promise.all(
+      ["Kitchen", "Living room"].map((name, i) =>
+        startSimulator({
+          profile: {
+            values: {
+              "netRemote.sys.info.friendlyName": name,
+              "netRemote.sys.info.radioId": `00226100000${i + 1}`,
+            },
+          },
+        }),
+      ),
+    );
+    const registry = new RadioRegistry({
+      controller: { activeIntervalMs: 60_000, backgroundIntervalMs: 60_000 },
+      multiroom: { intervalMs: 60_000, settleMs: 0 },
+    });
+    registries.push(registry);
+    try {
+      const kitchen = await registry.connect(sims[0]?.host ?? "");
+      await vi.waitFor(() => expect(registry.multiroom.speaker(kitchen.id)).toBeDefined());
+      const living = await registry.connect(sims[1]?.host ?? "");
+      await vi.waitFor(() =>
+        expect(registry.multiroom.speaker(living.id)?.name).toBe("Living room"),
+      );
+    } finally {
+      await Promise.all(sims.map((s) => s.close()));
+    }
+  });
+
   it("reports when no saved speaker has multiroom", async () => {
     const sim = await startSimulator({
       profile: {
@@ -225,7 +256,7 @@ describe("MultiroomDirectory", () => {
     });
     registries.push(registry);
     try {
-      const { id } = await registry.add(sim.host);
+      const { id } = await registry.connect(sim.host);
       await registry.controller(id)?.refreshNow();
       await registry.multiroom.refresh(true);
       expect(registry.multiroom.getSnapshot().status).toBe("unsupported");

@@ -200,7 +200,7 @@ input {
   padding-inline: 12px;
 }
 
-.sidebar__add {
+.sidebar__connect {
   padding-inline: 4px;
 }
 
@@ -382,7 +382,7 @@ input {
   cursor: default;
 }
 
-.sidebar__add > .button {
+.sidebar__connect > .button {
   inline-size: 100%;
 }
 
@@ -1259,12 +1259,12 @@ input {
 }
 
 /* Forms */
-.add-form {
+.connect-form {
   display: grid;
   gap: 14px;
 }
 
-.add-form__title {
+.connect-form__title {
   font-size: 1.1rem;
 }
 

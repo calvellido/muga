@@ -15,51 +15,51 @@ function shownGroups(groups: readonly MultiroomGroup[], saved: ReadonlySet<strin
   return groups.filter((g) => members(g).some((s) => s.radioId && saved.has(s.radioId)));
 }
 
-/** Adds a speaker found on the network, with the default PIN. */
-function useAddFound(onAdded?: () => void) {
+/** Connects a speaker found on the network, with the default PIN. */
+function useConnectFound(onConnected?: () => void) {
   const t = useT();
   const registry = useRegistry();
-  const [adding, setAdding] = useState<string>();
+  const [connecting, setConnecting] = useState<string>();
   const [error, setError] = useState<{ udn: string; text: string }>();
 
-  async function add(speaker: MultiroomSpeaker) {
+  async function connect(speaker: MultiroomSpeaker) {
     const name = speaker.name || speaker.ip;
-    setAdding(speaker.udn);
+    setConnecting(speaker.udn);
     setError(undefined);
     try {
-      await registry.add(speaker.ip, DEFAULT_PIN);
-      onAdded?.();
+      await registry.connect(speaker.ip, DEFAULT_PIN);
+      onConnected?.();
     } catch (caught) {
       setError({
         udn: speaker.udn,
         text: isFsapiError(caught, "pin")
           ? t("discover.error.pin", { name })
-          : t("add.error.unreachable", { host: speaker.ip }),
+          : t("connect.error.unreachable", { host: speaker.ip }),
       });
     } finally {
-      setAdding(undefined);
+      setConnecting(undefined);
     }
   }
-  return { add, adding, error };
+  return { connect, connecting, error };
 }
 
-function AddFoundButton({
+function ConnectButton({
   speaker,
   found,
 }: {
   speaker: MultiroomSpeaker;
-  found: ReturnType<typeof useAddFound>;
+  found: ReturnType<typeof useConnectFound>;
 }) {
   const t = useT();
   return (
     <button
       type="button"
       className="button button--ghost button--small"
-      aria-label={t("discover.addLabel", { name: speaker.name || speaker.ip })}
-      disabled={found.adding !== undefined}
-      onClick={() => void found.add(speaker)}
+      aria-label={t("discover.connectLabel", { name: speaker.name || speaker.ip })}
+      disabled={found.connecting !== undefined}
+      onClick={() => void found.connect(speaker)}
     >
-      {found.adding === speaker.udn ? t("discover.adding") : t("discover.add")}
+      {found.connecting === speaker.udn ? t("discover.connecting") : t("discover.connect")}
     </button>
   );
 }
@@ -72,7 +72,7 @@ export function RadioList({ onSelect }: { onSelect?: () => void }) {
   const saved = new Set(radios.map((r) => r.id));
   const isSaved = (s: MultiroomSpeaker) => s.radioId !== undefined && saved.has(s.radioId);
   const shown = shownGroups(groups, saved);
-  const found = useAddFound(onSelect);
+  const found = useConnectFound(onSelect);
   const grouped = new Set(shown.flatMap((g) => members(g).flatMap((s) => s.radioId ?? [])));
   const select = (id: string) => {
     registry.select(id);
@@ -122,7 +122,7 @@ function GroupListItem({
   active: boolean;
   activeId: string | undefined;
   isSaved: (speaker: MultiroomSpeaker) => boolean;
-  found: ReturnType<typeof useAddFound>;
+  found: ReturnType<typeof useConnectFound>;
   onSelectGroup: () => void;
   onSelect: (id: string) => void;
 }) {
@@ -164,7 +164,7 @@ function GroupListItem({
             <li key={speaker.udn} className="member member--unsaved">
               <span className="member__name">{speaker.name || speaker.ip}</span>
               {speaker.ip ? (
-                <AddFoundButton speaker={speaker} found={found} />
+                <ConnectButton speaker={speaker} found={found} />
               ) : (
                 <span className="member__note">{t("groups.status.notSaved")}</span>
               )}
@@ -246,21 +246,21 @@ function RadioListItem({
   );
 }
 
-/** Multiroom speakers on the network that aren't saved yet, one tap away from being added. */
-export function DiscoveredSpeakers({ onAdded }: { onAdded?: () => void }) {
+/** Multiroom speakers on the network that aren't connected to Muga yet, one tap away. */
+export function DiscoveredSpeakers({ onConnected }: { onConnected?: () => void }) {
   const t = useT();
   const id = useId();
   const { radios } = useRegistrySnapshot();
   const { speakers, groups } = useMultiroom();
-  const add = useAddFound(onAdded);
+  const found = useConnectFound(onConnected);
   // Members of listed groups are offered in their group instead.
   const listed = new Set(
     shownGroups(groups, new Set(radios.map((r) => r.id))).flatMap((g) =>
       members(g).map((s) => s.udn),
     ),
   );
-  const found = speakers.filter((s) => !s.radioId && s.ip && !listed.has(s.udn));
-  if (found.length === 0) return null;
+  const unconnected = speakers.filter((s) => !s.radioId && s.ip && !listed.has(s.udn));
+  if (unconnected.length === 0) return null;
 
   return (
     <section className="discovered" aria-labelledby={`${id}-title`}>
@@ -269,16 +269,16 @@ export function DiscoveredSpeakers({ onAdded }: { onAdded?: () => void }) {
       </h2>
       <p className="discovered__hint">{t("discover.hint")}</p>
       <ul className="radio-list">
-        {found.map((speaker) => (
+        {unconnected.map((speaker) => (
           <li key={speaker.udn} className="discovered__item">
             <span className="radio-item__text">
               <span className="radio-item__name">{speaker.name || speaker.ip}</span>
               <span className="radio-item__status">{speaker.ip}</span>
             </span>
-            <AddFoundButton speaker={speaker} found={add} />
-            {add.error?.udn === speaker.udn && (
+            <ConnectButton speaker={speaker} found={found} />
+            {found.error?.udn === speaker.udn && (
               <p className="form-error discovered__error" role="alert">
-                {add.error.text}
+                {found.error.text}
               </p>
             )}
           </li>
