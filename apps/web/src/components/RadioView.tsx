@@ -1,9 +1,9 @@
 import { useT } from "../i18n/index.tsx";
 import { useRadio, useRegistry } from "../radio/hooks.ts";
 import { Icon } from "./Icon.tsx";
+import { Library } from "./Library.tsx";
 import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
-import { SourcesAndPresets } from "./SourcesAndPresets.tsx";
 import { statusLine } from "./status.ts";
 import { Transport } from "./Transport.tsx";
 import { VolumeControl } from "./VolumeControl.tsx";
@@ -51,7 +51,7 @@ export function RadioView({ id }: { id: string }) {
           <Transport snapshot={snapshot} controller={controller} />
           <VolumeControl snapshot={snapshot} controller={controller} />
         </div>
-        <SourcesAndPresets snapshot={snapshot} controller={controller} />
+        <Library snapshot={snapshot} controller={controller} />
       </div>
 
       <footer className="radio-footer">

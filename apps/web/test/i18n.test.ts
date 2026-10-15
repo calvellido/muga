@@ -15,6 +15,11 @@ const SAMPLE_VALUES = {
   value: 12,
   max: 31,
   count: 3,
+  term: "jazz",
+  shown: 14,
+  total: 30,
+  station: "Radio Muga",
+  slot: 2,
 };
 
 describe("messages", () => {

@@ -1,4 +1,10 @@
-import type { FsapiErrorKind, ListItem, NodeValue } from "@muga/fsapi-core";
+import type {
+  FsapiClient,
+  FsapiErrorKind,
+  ListItem,
+  NavOptions,
+  NodeValue,
+} from "@muga/fsapi-core";
 
 export interface RadioConfig {
   /** Stable id: the radio's `sys.info.radioId`, or its host when that is unavailable. */
@@ -22,6 +28,45 @@ export type PlayAction = "PLAY" | "PAUSE" | "STOP" | "NEXT" | "PREVIOUS";
 export interface PresetsState {
   status: "idle" | "loading" | "ready" | "unsupported" | "standby" | "error";
   items: Preset[];
+  /** The radio answered that `nav.preset.delete` doesn't exist. */
+  deleteUnsupported?: boolean;
+  /** Slot being written (store, delete, move). */
+  busyKey?: number | undefined;
+}
+
+/** How a menu entry behaves. Forms, logins and unknown types aren't supported yet. */
+export type BrowseItemKind = "folder" | "playable" | "message" | "error" | "unsupported";
+
+export interface BrowseItem {
+  key: number;
+  name: string;
+  kind: BrowseItemKind;
+  artist: string;
+  artworkUrl: string;
+}
+
+/** One step from the top menu: a folder that was opened, or a search that was run. */
+export type BrowseCrumb =
+  | { kind: "folder"; key: number; name: string }
+  | { kind: "search"; key: number; term: string };
+
+export interface BrowseState {
+  status: "idle" | "loading" | "ready" | "unsupported" | "error";
+  /** Source the menu belongs to. */
+  modeKey: number | undefined;
+  path: BrowseCrumb[];
+  items: BrowseItem[];
+  /** Key of this level's SearchDirectory item; search is offered when set. */
+  searchKey: number | undefined;
+  /** `nav.numItems` without the search entry, when the radio knows it. */
+  total: number | undefined;
+  /** Start key of the next page; undefined at the end of the list. */
+  nextKey: number | undefined;
+  loadingMore: boolean;
+  /** A step (open, back, search, play…) is running. */
+  busy: boolean;
+  /** Item being opened or played. */
+  pendingKey: number | undefined;
 }
 
 export interface PlayState {
@@ -66,5 +111,19 @@ export interface RadioSnapshot {
   navCaps: number | undefined;
   currentPreset: number | undefined;
   presets: PresetsState;
+  browse: BrowseState;
   lastError: ActionError | undefined;
+}
+
+/** What the presets and browse helpers need from their RadioController. */
+export interface RadioContext {
+  readonly client: FsapiClient;
+  readonly nav: NavOptions;
+  snapshot(): RadioSnapshot;
+  update(patch: Partial<RadioSnapshot>): void;
+  /** Runs an action; a failure becomes `lastError` and resolves false. */
+  run(action: string, task: () => Promise<void>): Promise<boolean>;
+  fail(action: string, error: unknown): void;
+  /** Something else is playing now: re-read the track details soon. */
+  playbackChanged(): void;
 }

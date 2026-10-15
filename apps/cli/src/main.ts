@@ -6,8 +6,15 @@ import {
   FsapiClient,
   isFsapiError,
   lookupNode,
+  NAV_PAGE_SIZE,
+  NavItemType,
+  type NavListItem,
   NODE_DEFS,
   NotificationSession,
+  navigate,
+  readNavInfo,
+  readNavPage,
+  resetNav,
   type ScalarValue,
 } from "@muga/fsapi-core";
 import { startSimulator } from "@muga/fsapi-sim";
@@ -19,6 +26,7 @@ Usage:
   muga set <host> <node> <value>      Write one node; validated against the catalog first
   muga list <host> <node> [--max n]   Read a list node (e.g. sys.caps.validModes)
   muga info <host>                    Name, version, power, source, volume, now playing
+  muga browse <host> [key ...]        List the current source's menu, after entering folders by key
   muga watch <host> [--seconds n]     Stream notifications (creates a session, see below)
   muga device <host>                  Fetch the /device document
   muga nodes [filter]                 Search the node catalog (offline)
@@ -31,7 +39,8 @@ Options:
   -h, --help        Show this help
 
 <host> is an IP, host:port, or FSAPI base URL. The "netRemote." prefix of node names is optional.
-"watch" takes the radio's single session: other controllers (e.g. UNDOK) lose live updates while it runs.`;
+"watch" takes the radio's single session: other controllers (e.g. UNDOK) lose live updates while it runs.
+"browse" turns the radio's menu on and resets its position (nav.state OFF, then ON), as UNDOK does.`;
 
 const { values: opts, positionals } = parseArgs({
   allowPositionals: true,
@@ -162,6 +171,37 @@ async function info(host?: string) {
   );
 }
 
+async function browse(host?: string, keys: string[] = []) {
+  const radio = client(host);
+  const path = keys.map((key) => {
+    if (!/^\d+$/.test(key)) fail(`folder keys are numbers, got "${key}"`);
+    return Number(key);
+  });
+  await resetNav(radio);
+  for (const key of path) await navigate(radio, key);
+  const { numItems, depth } = await readNavInfo(radio);
+  const limit = opts.max ? Number(opts.max) : 100;
+  const items: NavListItem[] = [];
+  let startKey = -1;
+  while (items.length < limit) {
+    const page = await readNavPage(radio, startKey);
+    items.push(...page.items);
+    const last = page.items.at(-1);
+    if (page.listEnd || !last || page.items.length < NAV_PAGE_SIZE) break;
+    startKey = last.key;
+  }
+  const typeNames = new Map<number, string>(Object.entries(NavItemType).map(([k, v]) => [v, k]));
+  print({ depth, numItems, items }, () =>
+    [
+      `depth ${depth ?? "?"}, ${numItems ?? "?"} items`,
+      ...items.map(
+        (i) =>
+          `${String(i.key).padStart(4)}  ${(typeNames.get(i.type) ?? String(i.type)).padEnd(15)} ${i.name}${i.artist ? `  (${i.artist})` : ""}`,
+      ),
+    ].join("\n"),
+  );
+}
+
 async function watch(host?: string) {
   const radio = client(host);
   const seconds = Number(opts.seconds ?? 30);
@@ -239,6 +279,8 @@ async function main() {
       return list(args[0], args[1]);
     case "info":
       return info(args[0]);
+    case "browse":
+      return browse(args[0], args.slice(1));
     case "watch":
       return watch(args[0]);
     case "device":

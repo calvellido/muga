@@ -39,6 +39,24 @@ export {
   redactPin,
 } from "./errors.ts";
 export { NODE_DEFS } from "./generated/nodes.ts";
+export {
+  ensureNavReady,
+  isNavFailure,
+  NAV_PAGE_SIZE,
+  NAV_UP,
+  type NavInfo,
+  NavItemSubType,
+  NavItemType,
+  type NavListItem,
+  type NavOptions,
+  navigate,
+  readNavInfo,
+  readNavPage,
+  resetNav,
+  searchNav,
+  selectNavItem,
+  waitForNav,
+} from "./nav.ts";
 export { NotificationSession, type NotificationSessionOptions } from "./notifications.ts";
 export { RequestQueue } from "./queue.ts";
 export type * from "./types.ts";
