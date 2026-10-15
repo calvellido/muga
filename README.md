@@ -22,7 +22,9 @@
   <img src="docs/images/desktop.png" width="880" alt="Muga in a desktop browser: two speakers in the sidebar, Jazz Lounge 7 playing in the living room with its artwork and controls, and the Jazz folder of the internet radio menu next to it.">
 </p>
 
-*Muga* is Basque for "frontier". Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
+*Muga* is Basque for "frontier".
+
+Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 ## ✨ What it does
 
