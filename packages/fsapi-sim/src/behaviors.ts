@@ -19,6 +19,8 @@ export interface BehaviorOptions {
   dabScanStepMs: number;
   /** Runs `fn` later; the simulator cancels pending calls when it closes. */
   later(ms: number, fn: () => void): void;
+  /** URL of a made-up logo for a station name. */
+  artwork(name: string): string;
 }
 
 export interface Behaviors {
@@ -102,7 +104,8 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
         name: item.name,
         type: NavItemType[itemType(item)],
         subType: NavItemSubType[item.subType ?? "None"],
-        graphicUri: item.graphicUri ?? "",
+        graphicUri:
+          item.graphicUri ?? (itemType(item) === "PlayableItem" ? options.artwork(item.name) : ""),
         artist: item.artist ?? "",
         contextMenu: 0,
       })),
@@ -178,7 +181,11 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
   const selectItem = (key: number) => {
     const item = stack.at(-1)?.[key];
     if (!item || itemType(item) !== "PlayableItem") return "FS_FAIL";
-    play(item.name, item.artist || "Playing from the menu", item.graphicUri);
+    play(
+      item.name,
+      item.artist || "Playing from the menu",
+      item.graphicUri ?? options.artwork(item.name),
+    );
     state.set("netRemote.nav.preset.currentPreset", NO_PRESET);
     return undefined;
   };
@@ -325,7 +332,7 @@ export function createBehaviors(state: SimState, options: BehaviorOptions): Beha
         case "netRemote.nav.action.selectPreset": {
           const preset = state.list("netRemote.nav.presets").find((p) => p.key === value);
           if (!preset?.name) return "FS_FAIL";
-          play(String(preset.name), "Playing preset");
+          play(String(preset.name), "Playing preset", options.artwork(String(preset.name)));
           state.set("netRemote.nav.preset.currentPreset", value);
           return undefined;
         }

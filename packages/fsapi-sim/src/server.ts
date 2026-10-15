@@ -8,6 +8,7 @@ import {
   type NodeDef,
   type NodePath,
 } from "@muga/fsapi-core";
+import { artworkSvg } from "./artwork.ts";
 import { createBehaviors, type SimState } from "./behaviors.ts";
 import { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
 
@@ -103,9 +104,9 @@ function fsapi(status: string, inner = ""): string {
   return `<fsapiResponse>\n<status>${status}</status>\n${inner}</fsapiResponse>\n`;
 }
 
-function send(res: ServerResponse, httpStatus: number, body = ""): void {
+function send(res: ServerResponse, httpStatus: number, body = "", contentType = "text/xml"): void {
   res.writeHead(httpStatus, {
-    "Content-Type": "text/xml",
+    "Content-Type": contentType,
     "Access-Control-Allow-Origin": "*",
     Connection: "close",
     "Content-Length": Buffer.byteLength(body),
@@ -253,6 +254,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
         modes: profile.modes,
         navDelayMs: options.navDelayMs ?? 0,
         dabScanStepMs: options.dabScanStepMs ?? 300,
+        artwork: (name) => `${baseUrl}/artwork.svg?name=${encodeURIComponent(name)}`,
         later(ms, fn) {
           const timer = setTimeout(() => {
             timers.delete(timer);
@@ -304,6 +306,9 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
 
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://sim");
+    if (url.pathname === "/artwork.svg") {
+      return send(res, 200, artworkSvg(url.searchParams.get("name") ?? ""), "image/svg+xml");
+    }
     if (url.pathname === "/device") {
       const name = String(scalars.get("netRemote.sys.info.friendlyName") ?? "");
       const version = String(scalars.get("netRemote.sys.info.version") ?? "");
@@ -433,6 +438,14 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
   const hostname = address.family === "IPv6" ? `[${address.address}]` : address.address;
   const host = `${hostname}:${address.port}`;
   baseUrl = `http://${host}`;
+  // The station playing at start gets a logo too, now that the address is known.
+  const playing = state.get("netRemote.play.info.name");
+  if (behaviors && playing && !state.get("netRemote.play.info.graphicUri")) {
+    state.set(
+      "netRemote.play.info.graphicUri",
+      `${baseUrl}/artwork.svg?name=${encodeURIComponent(String(playing))}`,
+    );
+  }
 
   return {
     url: baseUrl,
