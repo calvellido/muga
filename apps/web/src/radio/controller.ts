@@ -10,6 +10,7 @@ import { hasCap, PlayCap } from "./caps.ts";
 import { DabScanner } from "./dab.ts";
 import { LatestWins } from "./latest.ts";
 import { PresetManager } from "./presets.ts";
+import { initialSettings, SettingsManager } from "./settings.ts";
 import { FmTuner } from "./tuner.ts";
 import type {
   ActionError,
@@ -135,6 +136,7 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     browse: initialBrowse(),
     tuner: undefined,
     dabScan: { status: "idle", found: 0 },
+    settings: initialSettings(),
     lastError: undefined,
   };
 }
@@ -172,6 +174,8 @@ export class RadioController {
   readonly tuner: FmTuner;
   /** DAB station scan. */
   readonly dab: DabScanner;
+  /** Settings and device information. */
+  readonly settings: SettingsManager;
 
   private snapshot: RadioSnapshot;
   private readonly listeners = new Set<() => void>();
@@ -228,12 +232,17 @@ export class RadioController {
         this.lastTrackKey = "";
         this.schedule(300);
       },
+      refreshInfo: () => {
+        this.infoLoaded = false;
+        this.schedule(300);
+      },
       now: () => this.opts.now(),
     };
     this.presets = new PresetManager(context);
     this.browse = new BrowseSession(context);
     this.tuner = new FmTuner(context);
     this.dab = new DabScanner(context, this.browse, { pollMs: this.opts.dabPollMs });
+    this.settings = new SettingsManager(context);
   }
 
   // Store interface (for useSyncExternalStore)

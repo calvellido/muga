@@ -6,7 +6,7 @@ Not affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 ## Status
 
-Phase 1 (protocol core, simulator and CLI) and the first hub-less web app (Phase 1b) are done. Phase 4 is under way: menu browsing, preset editing, the FM tuner and DAB scanning are in; settings come next.
+Phase 1 (protocol core, simulator and CLI) and the first hub-less web app (Phase 1b) are done. Phase 4 (single-speaker parity with UNDOK) is in: menu browsing, preset editing, the FM tuner, DAB scanning, and speaker settings.
 
 | Package | What it is |
 | --- | --- |
@@ -52,7 +52,8 @@ Add a real radio by its IP address (for example `192.0.2.10`) and PIN (usually `
 - browsing the source's menu: folders, search, long lists, playing an item;
 - presets: recall, save what's playing into a slot, delete, and reorder (where the radio allows it);
 - FM: tune with a dial or one step at a time, and seek to the next station;
-- DAB: scan for stations, with progress, then remove stations that can't be received.
+- DAB: scan for stations, with progress, then remove stations that can't be received;
+- settings: rename, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality, and device info (with the Wi-Fi network name UNDOK shows as "ERROR").
 
 Using the library:
 

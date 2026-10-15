@@ -178,6 +178,12 @@ export class RadioRegistry {
     this.controllers.get(id)?.setPin(pin);
   }
 
+  /** Keeps the saved name in step after the radio was renamed (shown while it's offline). */
+  rename(id: string, name: string): void {
+    const radios = this.snapshot.radios.map((r) => (r.id === id ? { ...r, name } : r));
+    this.commit({ ...this.snapshot, radios });
+  }
+
   private dropController(id: string): void {
     this.controllers.get(id)?.stop();
     this.controllers.delete(id);

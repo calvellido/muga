@@ -102,6 +102,76 @@ export interface DabScanState {
   found: number;
 }
 
+export interface DeviceInfo {
+  model: string;
+  version: string;
+  radioId: string;
+  serial: string;
+  /** How the radio is connected, when it says. */
+  network: "wifi" | "ethernet" | undefined;
+  /** Wi-Fi network name (`sys.net.wlan.connectedSSID`, a byte array UNDOK shows as "ERROR"). */
+  ssid: string;
+  /** `sys.net.wlan.rssi` as the radio reports it; UNDOK draws it as a bar. */
+  signal: number | undefined;
+  /** The wired MAC address when Ethernet is in use, else the Wi-Fi one (as UNDOK). */
+  mac: string;
+}
+
+export interface EqBand {
+  key: number;
+  label: string;
+  min: number;
+  max: number;
+  value: number | undefined;
+}
+
+export interface EqState {
+  presets: { key: number; label: string }[];
+  /** Preset key 0 is the custom one, with adjustable bands (doc 06 §3.2). */
+  current: number | undefined;
+  bands: EqBand[];
+  /** Undefined when the radio has no loudness setting. */
+  loudness: boolean | undefined;
+}
+
+export type ClockSource = "MANUAL" | "DAB" | "FM" | "SNTP";
+
+export interface ClockState {
+  format: "12" | "24" | undefined;
+  source: ClockSource | undefined;
+  /** Sources the radio offers (`sys.caps.clockSourceList`). */
+  sources: ClockSource[];
+  /** Seconds east of UTC. */
+  utcOffset: number | undefined;
+  dst: boolean | undefined;
+  /** Region label; undefined when the radio has no `sys.clock.timeZone` (ICD2018, V2.13). */
+  timeZone: string | undefined;
+  /** Time zones for network time (`sys.caps.utcSettingsList`), offsets in seconds. */
+  zones: { key: number; offset: number; region: string }[];
+  /** The radio's clock as `YYYYMMDD` and `HHMMSS`, and when it was read. */
+  date: string;
+  time: string;
+  readAt: number;
+}
+
+export interface SettingsState {
+  status: "idle" | "loading" | "ready" | "error";
+  device: DeviceInfo | undefined;
+  /** Seconds left on the sleep timer (0: off) and when they were read; undefined: no timer. */
+  sleep: { remaining: number; readAt: number } | undefined;
+  eq: EqState | undefined;
+  clock: ClockState | undefined;
+  /** The radio's own menu language. */
+  language: { current: number | undefined; options: { key: number; label: string }[] } | undefined;
+  /** Streaming quality, on whichever node the radio has. */
+  quality:
+    | {
+        node: "netRemote.sys.audio.airableQuality" | "netRemote.sys.audio.quality";
+        value: "LOW" | "NORMAL" | "HIGH";
+      }
+    | undefined;
+}
+
 export interface ActionError {
   action: string;
   kind: FsapiErrorKind | "unknown";
@@ -131,6 +201,7 @@ export interface RadioSnapshot {
   /** Known once the radio has been on FM. */
   tuner: TunerState | undefined;
   dabScan: DabScanState;
+  settings: SettingsState;
   lastError: ActionError | undefined;
 }
 
@@ -145,5 +216,7 @@ export interface RadioContext {
   fail(action: string, error: unknown): void;
   /** Something else is playing now: re-read the track details soon. */
   playbackChanged(): void;
+  /** Re-read identity, sources and capabilities on the next poll (e.g. after a language change). */
+  refreshInfo(): void;
   now(): number;
 }
