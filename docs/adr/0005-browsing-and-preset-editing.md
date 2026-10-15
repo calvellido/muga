@@ -40,6 +40,7 @@ On 2026-10-15, on an ICD2018 (FS2026, V2.13.21c), with Muga's own browse and pre
 - **Internet radio:** WAITING, then READY_ROOT after about 280 ms. Search sits under "Estaciones", and depth counts search results as a level. Paging from the last key works (103-item list).
 - **Presets:** fields are `name` and `type` only (no `url`, `uniqid` or `blob`), so reorder isn't offered there.
 - **No current preset:** `nav.preset.currentPreset` doesn't exist.
+- **Storing:** saving the playing FM station into an empty slot (`play.addPreset`) worked, and `play.addPresetStatus` read PRESET_STORRED. The list showed the new preset on the first re-read. The radio names FM presets by frequency ("90.85MHz"), not by the RDS name it was playing ("SER").
 
 ## Consequences
 
