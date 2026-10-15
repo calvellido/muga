@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { AddRadioForm } from "./components/AddRadioForm.tsx";
+import { ConnectForm } from "./components/ConnectForm.tsx";
+import { GroupView } from "./components/GroupView.tsx";
 import { Icon } from "./components/Icon.tsx";
-import { RadioList } from "./components/RadioList.tsx";
+import { DiscoveredSpeakers, RadioList } from "./components/RadioList.tsx";
 import { RadioView } from "./components/RadioView.tsx";
 import { useT } from "./i18n/index.tsx";
-import { useMediaQuery, useRadio, useRegistry, useRegistrySnapshot } from "./radio/hooks.ts";
+import {
+  useMediaQuery,
+  useMultiroom,
+  useRadio,
+  useRegistry,
+  useRegistrySnapshot,
+} from "./radio/hooks.ts";
 
 function Brand() {
   const t = useT();
@@ -26,7 +33,7 @@ function Welcome() {
         <p className="muted">{t("radios.empty.body")}</p>
       </div>
       <div className="card">
-        <AddRadioForm />
+        <ConnectForm />
       </div>
     </div>
   );
@@ -35,10 +42,11 @@ function Welcome() {
 export function App() {
   const t = useT();
   const registry = useRegistry();
-  const { radios, activeId } = useRegistrySnapshot();
+  const { radios, activeId, activeGroupId } = useRegistrySnapshot();
   const active = useRadio(activeId);
+  const activeGroup = useMultiroom().groups.find((g) => g.id === activeGroupId);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   // At narrow widths the sidebar is an off-canvas drawer: keep it out of tab order and the
   // accessibility tree while closed.
   const wide = useMediaQuery("(min-width: 900px)");
@@ -71,7 +79,7 @@ export function App() {
 
   const closeDrawer = () => {
     setDrawerOpen(false);
-    setAdding(false);
+    setConnecting(false);
   };
 
   return (
@@ -87,7 +95,9 @@ export function App() {
             aria-controls="speakers"
             onClick={() => setDrawerOpen(true)}
           >
-            <span className="switcher__label">{active?.snapshot.name ?? t("radios.switch")}</span>
+            <span className="switcher__label">
+              {activeGroup?.name ?? active?.snapshot.name ?? t("radios.switch")}
+            </span>
             <Icon name="chevronDown" size={18} />
             <span className="visually-hidden">{t("radios.switch")}</span>
           </button>
@@ -115,17 +125,18 @@ export function App() {
           </div>
           <h2 className="sidebar__title">{t("radios.title")}</h2>
           <RadioList onSelect={closeDrawer} />
-          <div className="sidebar__add">
-            {adding ? (
-              <AddRadioForm onDone={closeDrawer} onCancel={() => setAdding(false)} />
+          <DiscoveredSpeakers onConnected={closeDrawer} />
+          <div className="sidebar__connect">
+            {connecting ? (
+              <ConnectForm onDone={closeDrawer} onCancel={() => setConnecting(false)} />
             ) : (
               <button
                 type="button"
                 className="button button--ghost"
-                onClick={() => setAdding(true)}
+                onClick={() => setConnecting(true)}
               >
                 <Icon name="plus" size={20} />
-                {t("radios.add")}
+                {t("radios.connect")}
               </button>
             )}
           </div>
@@ -144,6 +155,8 @@ export function App() {
       <main className="main">
         {radios.length === 0 ? (
           <Welcome />
+        ) : activeGroup ? (
+          <GroupView key={activeGroup.id} groupId={activeGroup.id} />
         ) : activeId ? (
           <RadioView key={activeId} id={activeId} />
         ) : null}

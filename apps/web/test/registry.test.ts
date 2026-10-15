@@ -36,11 +36,11 @@ afterEach(async () => {
 });
 
 describe("RadioRegistry", () => {
-  it("probes, saves and selects a radio, persisting across instances", async () => {
+  it("connects a radio (probes, saves and selects it), persisting across instances", async () => {
     const radio = await sim();
     const storage = new MemoryStorage();
     const first = registry(storage);
-    const config = await first.add(radio.host);
+    const config = await first.connect(radio.host);
     expect(config).toEqual({
       id: "002261000000",
       host: radio.host,
@@ -53,12 +53,12 @@ describe("RadioRegistry", () => {
     expect(second.getSnapshot()).toEqual({ radios: [config], activeId: config.id });
   });
 
-  it("updates instead of duplicating when the same radio is added again", async () => {
+  it("updates instead of duplicating when the same radio is connected again", async () => {
     const radio = await sim({ pin: "9999" });
     const r = registry();
-    await expect(r.add(radio.host, "1234")).rejects.toMatchObject({ kind: "pin" });
-    await r.add(radio.host, "9999");
-    await r.add(radio.host, "9999");
+    await expect(r.connect(radio.host, "1234")).rejects.toMatchObject({ kind: "pin" });
+    await r.connect(radio.host, "9999");
+    await r.connect(radio.host, "9999");
     expect(r.getSnapshot().radios).toHaveLength(1);
   });
 
@@ -66,7 +66,7 @@ describe("RadioRegistry", () => {
     await expect(registry().probe("127.0.0.1:1")).rejects.toMatchObject({ kind: "network" });
   });
 
-  it("selects and removes radios", async () => {
+  it("selects and forgets radios", async () => {
     const a = await sim({
       profile: {
         values: { "netRemote.sys.info.radioId": "A", "netRemote.sys.info.friendlyName": "Alpha" },
@@ -78,12 +78,12 @@ describe("RadioRegistry", () => {
       },
     });
     const r = registry();
-    await r.add(a.host);
-    await r.add(b.host);
+    await r.connect(a.host);
+    await r.connect(b.host);
     expect(r.getSnapshot().activeId).toBe("B");
     r.select("A");
     expect(r.getSnapshot().activeId).toBe("A");
-    r.remove("A");
+    r.forget("A");
     expect(r.getSnapshot()).toMatchObject({ activeId: "B", radios: [{ id: "B", name: "Beta" }] });
   });
 
@@ -98,7 +98,7 @@ describe("RadioRegistry", () => {
       },
     };
     const r = registry(broken);
-    await r.add(radio.host);
+    await r.connect(radio.host);
     expect(r.getSnapshot().radios).toHaveLength(1);
     expect(registry(undefined).getSnapshot().radios).toEqual([]);
   });

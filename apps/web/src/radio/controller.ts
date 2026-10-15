@@ -9,6 +9,7 @@ import { BrowseSession, initialBrowse } from "./browse.ts";
 import { hasCap, PlayCap } from "./caps.ts";
 import { DabScanner } from "./dab.ts";
 import { LatestWins } from "./latest.ts";
+import { GroupMixer, MIXER_NODES } from "./mixer.ts";
 import { PresetManager } from "./presets.ts";
 import { initialSettings, SettingsManager } from "./settings.ts";
 import { FmTuner } from "./tuner.ts";
@@ -27,6 +28,7 @@ const INFO_NODES = [
   "netRemote.sys.info.friendlyName",
   "netRemote.sys.info.version",
   "netRemote.sys.info.modelName",
+  "netRemote.sys.info.dmruuid",
   "netRemote.sys.caps.volumeSteps",
   "netRemote.nav.caps",
 ] as const satisfies readonly ScalarPath[];
@@ -123,6 +125,7 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     name: config.name,
     version: "",
     model: "",
+    udn: "",
     volumeSteps: DEFAULT_VOLUME_STEPS,
     power: undefined,
     modeKey: undefined,
@@ -137,6 +140,7 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     tuner: undefined,
     dabScan: { status: "idle", found: 0 },
     settings: initialSettings(),
+    mixer: undefined,
     lastError: undefined,
   };
 }
@@ -176,14 +180,18 @@ export class RadioController {
   readonly dab: DabScanner;
   /** Settings and device information. */
   readonly settings: SettingsManager;
+  /** Volumes of the multiroom group this radio serves. */
+  readonly mixer: GroupMixer;
+  /** For multiroom changes, which involve several radios. */
+  readonly client: FsapiClient;
 
   private snapshot: RadioSnapshot;
   private readonly listeners = new Set<() => void>();
-  private readonly client: FsapiClient;
   private readonly opts: Required<Omit<RadioControllerOptions, "fetch">>;
 
   private running = false;
   private active = false;
+  private serving = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private currentPoll: Promise<void> | undefined;
   private pollAgain = false;
@@ -243,6 +251,7 @@ export class RadioController {
     this.tuner = new FmTuner(context);
     this.dab = new DabScanner(context, this.browse, { pollMs: this.opts.dabPollMs });
     this.settings = new SettingsManager(context);
+    this.mixer = new GroupMixer(context);
   }
 
   // Store interface (for useSyncExternalStore)
@@ -257,8 +266,12 @@ export class RadioController {
   // Lifecycle
 
   start(active = false): void {
+    // Already polling: becoming the selected radio still means reading it in full right away.
+    if (this.running) {
+      this.setActive(active);
+      return;
+    }
     this.active = active;
-    if (this.running) return;
     this.running = true;
     this.schedule(0);
   }
@@ -275,6 +288,14 @@ export class RadioController {
       this.lastTrackKey = "";
       this.schedule(0);
     }
+  }
+
+  /** While this radio serves the group on screen, its group volumes are polled too. */
+  setGroupServer(serving: boolean): void {
+    if (this.serving === serving) return;
+    this.serving = serving;
+    if (serving) this.schedule(0);
+    else this.update({ mixer: undefined });
   }
 
   /** Polls now and resolves when the poll has finished. */
@@ -451,6 +472,10 @@ export class RadioController {
         text: values["netRemote.play.info.text"]?.trim() ?? this.snapshot.play.text,
       });
       this.failures = 0;
+      // A request of its own: radios may limit the URL length (ADR 0007).
+      if (this.active && this.serving) {
+        this.mixer.observe((await this.client.getMultiple(MIXER_NODES)).values);
+      }
 
       if (this.active && modeId === "FM") {
         if (this.snapshot.tuner) this.tuner.observe(values["netRemote.play.frequency"]);
@@ -489,6 +514,7 @@ export class RadioController {
       name: values["netRemote.sys.info.friendlyName"] || this.snapshot.config.name,
       version: values["netRemote.sys.info.version"] ?? "",
       model: values["netRemote.sys.info.modelName"] ?? "",
+      udn: values["netRemote.sys.info.dmruuid"]?.trim() ?? "",
       volumeSteps: steps && steps > 0 ? steps : DEFAULT_VOLUME_STEPS,
       navCaps: values["netRemote.nav.caps"],
       modes,

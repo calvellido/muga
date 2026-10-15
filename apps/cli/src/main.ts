@@ -12,12 +12,14 @@ import {
   NODE_DEFS,
   NotificationSession,
   navigate,
+  readMultiroomDevices,
   readNavInfo,
   readNavPage,
   resetNav,
   type ScalarValue,
+  udnSuffix,
 } from "@muga/fsapi-core";
-import { startSimulator } from "@muga/fsapi-sim";
+import { startSimulatedHome, startSimulator } from "@muga/fsapi-sim";
 
 const HELP = `muga: FSAPI command-line tool
 
@@ -27,10 +29,12 @@ Usage:
   muga list <host> <node> [--max n]   Read a list node (e.g. sys.caps.validModes)
   muga info <host>                    Name, version, power, source, volume, now playing
   muga browse <host> [key ...]        List the current source's menu, after entering folders by key
+  muga groups <host>                  Multiroom: this radio's group and every speaker it knows of
   muga watch <host> [--seconds n]     Stream notifications (creates a session, see below)
   muga device <host>                  Fetch the /device document
   muga nodes [filter]                 Search the node catalog (offline)
   muga sim [--port n] [--host h]      Run a simulated radio
+           [--speakers n]             …or n speakers that can group, on ports from --port up
 
 Options:
   --pin <pin>       Radio PIN (default $MUGA_PIN or 1234)
@@ -52,6 +56,7 @@ const { values: opts, positionals } = parseArgs({
     seconds: { type: "string" },
     port: { type: "string" },
     host: { type: "string" },
+    speakers: { type: "string" },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -202,6 +207,51 @@ async function browse(host?: string, keys: string[] = []) {
   );
 }
 
+async function groups(host?: string) {
+  const radio = client(host);
+  const { values, errors } = await radio.getMultiple([
+    "netRemote.sys.info.friendlyName",
+    "netRemote.sys.info.radioId",
+    "netRemote.sys.info.dmruuid",
+    "netRemote.multiroom.caps.protocolVersion",
+    "netRemote.multiroom.caps.maxClients",
+    "netRemote.multiroom.group.state",
+    "netRemote.multiroom.group.name",
+    "netRemote.multiroom.group.streamable",
+    "netRemote.multiroom.device.listAllVersion",
+  ]);
+  const devices = await readMultiroomDevices(radio);
+  // Which entry is this radio: its UDN ends like its radio id or its UPnP UDN (doc 05 §6.1).
+  const ids = [values["netRemote.sys.info.radioId"], values["netRemote.sys.info.dmruuid"]]
+    .map((id) => (id ? udnSuffix(id) : ""))
+    .filter(Boolean);
+  const self = devices.find((d) => ids.includes(udnSuffix(d.udn)));
+  const role = values["netRemote.multiroom.group.state"];
+  const groupsById = Map.groupBy(
+    devices.filter((d) => d.groupId),
+    (d) => d.groupId,
+  );
+  const line = (d: (typeof devices)[number]) =>
+    `    ${(d.role === "CLIENT" ? `CLIENT ${d.clientNumber ?? "?"}` : d.role).padEnd(9)} ${d.name.padEnd(20)} ${d.ip.padEnd(15)} ${d.udn}${d === self ? "  (this radio)" : ""}${d.syncVersion ? `  protocol ${d.syncVersion}` : ""}`;
+  print({ radio: values, unavailable: Object.keys(errors), devices }, () =>
+    [
+      `${values["netRemote.sys.info.friendlyName"] ?? radio.baseUrl}: ${role ?? "?"}${role === "NO_GROUP" || role === undefined ? "" : ` of "${values["netRemote.multiroom.group.name"] ?? ""}"`}`,
+      `  source can be shared: ${values["netRemote.multiroom.group.streamable"] ?? "?"}, protocol ${values["netRemote.multiroom.caps.protocolVersion"] ?? "?"}, up to ${values["netRemote.multiroom.caps.maxClients"] ?? "?"} clients`,
+      `  radio id ${values["netRemote.sys.info.radioId"] ?? "?"}, UPnP UDN ${values["netRemote.sys.info.dmruuid"] || "?"}${self ? "" : ", not found in the speaker list below"}`,
+      `${devices.length} speakers (list version ${values["netRemote.multiroom.device.listAllVersion"] ?? "?"}):`,
+      ...[...groupsById].flatMap(([, members]) => [
+        `  ${members[0]?.groupName || "(unnamed group)"}`,
+        ...[...members]
+          .sort((a, b) => (a.role === "SERVER" ? -1 : b.role === "SERVER" ? 1 : 0))
+          .map(line),
+      ]),
+      ...(devices.some((d) => !d.groupId)
+        ? ["  Not grouped", ...devices.filter((d) => !d.groupId).map(line)]
+        : []),
+    ].join("\n"),
+  );
+}
+
 async function watch(host?: string) {
   const radio = client(host);
   const seconds = Number(opts.seconds ?? 30);
@@ -256,6 +306,7 @@ function nodes(filter = "") {
 }
 
 async function sim() {
+  if (opts.speakers) return simHome(Number(opts.speakers));
   const radio = await startSimulator({
     ...(opts.port ? { port: Number(opts.port) } : { port: 8099 }),
     ...(opts.host ? { host: opts.host } : {}),
@@ -266,6 +317,26 @@ async function sim() {
   );
   await new Promise<void>((done) => process.once("SIGINT", () => done()));
   await radio.close();
+}
+
+async function simHome(count: number) {
+  if (!Number.isInteger(count) || count < 1) fail("--speakers takes a number of speakers");
+  const home = await startSimulatedHome({
+    speakers: count,
+    basePort: opts.port ? Number(opts.port) : 8099,
+    ...(opts.host ? { host: opts.host } : {}),
+    ...(opts.pin ? { pin: opts.pin } : {}),
+  });
+  console.log(
+    `${count} simulated speakers on one multiroom network (PIN ${home.speakers[0]?.pin}):`,
+  );
+  for (const radio of home.speakers) {
+    const name = radio.get("netRemote.sys.info.friendlyName");
+    console.log(`  ${String(name).padEnd(12)} ${radio.url}`);
+  }
+  console.log(`Try: pnpm muga groups ${home.speakers[0]?.host}`);
+  await new Promise<void>((done) => process.once("SIGINT", () => done()));
+  await home.close();
 }
 
 async function main() {
@@ -281,6 +352,8 @@ async function main() {
       return info(args[0]);
     case "browse":
       return browse(args[0], args.slice(1));
+    case "groups":
+      return groups(args[0]);
     case "watch":
       return watch(args[0]);
     case "device":

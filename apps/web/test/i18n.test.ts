@@ -24,6 +24,10 @@ const SAMPLE_VALUES = {
   minutes: 30,
   key: 4,
   ssid: "MugaNet",
+  group: "Downstairs",
+  source: "DAB",
+  next: "Kitchen",
+  number: 2,
 };
 
 describe("messages", () => {

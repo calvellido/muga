@@ -1,8 +1,14 @@
 // @vitest-environment happy-dom
 import { request } from "node:http";
 import type { FetchLike } from "@muga/fsapi-core";
-import { type RadioSimulator, type SimulatorOptions, startSimulator } from "@muga/fsapi-sim";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  type RadioSimulator,
+  type SimulatedHome,
+  type SimulatorOptions,
+  startSimulatedHome,
+  startSimulator,
+} from "@muga/fsapi-sim";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.tsx";
@@ -12,6 +18,7 @@ import { RegistryContext } from "../src/radio/hooks.ts";
 import { RadioRegistry } from "../src/radio/registry.ts";
 
 let sim: RadioSimulator | undefined;
+let home: SimulatedHome | undefined;
 let registry: RadioRegistry | undefined;
 
 /**
@@ -36,12 +43,20 @@ afterEach(async () => {
   cleanup();
   registry?.stop();
   await sim?.close();
+  await home?.close();
+  sim = undefined;
+  home = undefined;
 });
 
 function renderApp() {
   registry = new RadioRegistry({
     fetch: nodeFetch,
     controller: { activeIntervalMs: 100, navPollMs: 5, dabPollMs: 5 },
+    multiroom: {
+      intervalMs: 200,
+      settleMs: 0,
+      waits: { create: 0, add: 0, handOver: 0, destroy: 0 },
+    },
   });
   render(
     <I18nProvider locale="en" messages={en}>
@@ -52,26 +67,26 @@ function renderApp() {
   );
 }
 
-/** Starts a simulator, adds it as a speaker and waits for its view. */
+/** Starts a simulator, connects it as a speaker and waits for its view. */
 async function addSimulatedSpeaker(options: SimulatorOptions = {}) {
   sim = await startSimulator(options);
   const user = userEvent.setup();
   renderApp();
   await user.type(screen.getByLabelText("IP address"), sim.host);
-  await user.click(screen.getByRole("button", { name: "Add speaker" }));
+  await user.click(screen.getByRole("button", { name: "Connect" }));
   expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
   return { sim, user };
 }
 
 describe("App", () => {
-  it("adds a speaker, controls playback and recalls a preset", async () => {
+  it("connects a speaker, controls playback and recalls a preset", async () => {
     sim = await startSimulator();
     const user = userEvent.setup();
     renderApp();
 
     expect(screen.getByRole("heading", { name: "No speakers yet" })).toBeTruthy();
     await user.type(screen.getByLabelText("IP address"), sim.host);
-    await user.click(screen.getByRole("button", { name: "Add speaker" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Muga Simulator" })).toBeTruthy();
     expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
@@ -184,12 +199,58 @@ describe("App", () => {
     expect(await screen.findByRole("tab", { name: "Sources" })).toBeTruthy();
   });
 
-  it("explains why a speaker couldn't be added", async () => {
+  it("groups speakers, sets a speaker's volume in the group and ungroups", async () => {
+    home = await startSimulatedHome({ speakers: 3 });
+    const [living, kitchen] = home.speakers;
+    if (!living || !kitchen) throw new Error("speakers expected");
+    const confirm = vi.fn(() => true);
+    window.confirm = confirm;
+    const user = userEvent.setup();
+    renderApp();
+
+    // Connect one speaker; the others show up as found on the network.
+    await user.type(screen.getByLabelText("IP address"), living.host);
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Living room" })).toBeTruthy();
+    await user.click(await screen.findByRole("button", { name: "Connect Kitchen" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Connect Bedroom" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /^Living room/ }));
+    await user.click(
+      await screen.findByRole("button", { name: "Group Living room with other speakers" }),
+    );
+    expect(await screen.findByRole("heading", { level: 2, name: "Group speakers" })).toBeTruthy();
+    expect((screen.getByLabelText("Group name") as HTMLInputElement).value).toBe("Group 1");
+    await user.click(screen.getByRole("checkbox", { name: /Kitchen/ }));
+    await user.click(screen.getByRole("button", { name: "Create group" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Group 1" })).toBeTruthy();
+    expect(kitchen.get("netRemote.multiroom.group.state")).toBe(1);
+    expect(
+      within(screen.getByRole("list", { name: "Speakers in Group 1" })).getAllByRole("listitem"),
+    ).toHaveLength(2);
+    expect(screen.getAllByText("Not shared with the group").length).toBeGreaterThan(0);
+
+    fireEvent.change(await screen.findByLabelText("Volume of Kitchen"), {
+      target: { value: "3" },
+    });
+    await waitFor(() => expect(kitchen.get("netRemote.sys.audio.volume")).toBe(3));
+
+    await user.click(screen.getByRole("button", { name: "Ungroup" }));
+    expect(confirm).toHaveBeenCalledWith(
+      "Ungroup Group 1? Each speaker goes back to playing on its own.",
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Living room" })).toBeTruthy();
+    expect(kitchen.get("netRemote.multiroom.group.state")).toBe(0);
+  });
+
+  it("explains why a speaker couldn't be connected", async () => {
     sim = await startSimulator({ pin: "4321" });
     const user = userEvent.setup();
     renderApp();
     await user.type(screen.getByLabelText("IP address"), sim.host);
-    await user.click(screen.getByRole("button", { name: "Add speaker" }));
+    await user.click(screen.getByRole("button", { name: "Connect" }));
     expect((await screen.findByRole("alert")).textContent).toBe("The radio rejected this PIN.");
   });
 });

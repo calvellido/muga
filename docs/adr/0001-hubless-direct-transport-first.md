@@ -20,7 +20,7 @@ The remaining constraints:
 ## Decision
 
 - Build the web app talking to radios **directly from the browser** first. Serve it from `localhost` on the desktop (secure context, installable).
-- Radios are added by IP.
+- Radios are connected by IP address.
 - Live state comes from **polling plain GETs**, which needs no session and so doesn't take over from other controllers.
 - `@muga/fsapi-core` keeps the transport injectable (`fetch`-like function), so a LAN hub (discovery, notification fan-out, HTTPS) or native shells can be added later without changing the protocol code.
 

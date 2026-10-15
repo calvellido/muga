@@ -87,7 +87,7 @@ function PinPrompt({ snapshot }: { snapshot: RadioSnapshot }) {
         <p>{t("radio.pin.body")}</p>
         <div className="pin-form__row">
           <label className="visually-hidden" htmlFor={id}>
-            {t("add.pin.label")}
+            {t("connect.pin.label")}
           </label>
           <input
             id={id}
