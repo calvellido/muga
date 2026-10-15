@@ -11,6 +11,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/calvellido/muga/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/calvellido/muga/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-157552"></a>
   <img alt="Installable web app" src="https://img.shields.io/badge/PWA-installable-157552">
   <img alt="TypeScript, strict" src="https://img.shields.io/badge/TypeScript-strict-3178c6">
