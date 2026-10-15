@@ -79,6 +79,17 @@ describe("simulator behaviors", () => {
     await expect(client.get("netRemote.nav.action.dabScan")).resolves.toBe("IDLE");
   });
 
+  it("gives stations made-up logos it serves itself", async () => {
+    sim = await startSimulator();
+    const client = new FsapiClient({ host: sim.host });
+    await client.set("netRemote.nav.action.selectPreset", 1);
+    const uri = await client.get("netRemote.play.info.graphicUri");
+    expect(uri).toBe(`${sim.url}/artwork.svg?name=Frontera%20FM`);
+    const res = await fetch(uri);
+    expect(res.headers.get("content-type")).toBe("image/svg+xml");
+    expect(await res.text()).toContain(">FF</text>");
+  });
+
   it("can be turned off", async () => {
     sim = await startSimulator({ behaviors: false });
     const client = new FsapiClient({ host: sim.host });
