@@ -23,6 +23,14 @@ On 2026-10-16, with the user's permission, on an ICD2018, an SMRS35A1 and an SMR
 - **mDNS:** the radios advertise only `_spotify-connect._tcp`, not a service of UNDOK's own. Their mDNS host names are their names with spaces as hyphens (a radio named "Kitchen radio" answers at `Kitchen-radio.local`), and they resolved on a Linux desktop. FSAPI by that name answered as by address.
 - **Empty addresses:** an address with nothing behind it failed after about 3 s.
 - **SSDP:** the desktop received no replies from any device, which looks like its firewall; it doesn't matter for a web page.
+- **The Ruark (later that day):** its `/device` is readable too, and its name follows the same pattern.
+
+With the web app itself, in headless Chrome on that network, with the user's permission, and read only:
+
+- **"Find speakers" from a first visit:** it took the range from the router answering at its `.1` address. It found all four radios in about 20 s: 3 s to choose the range, then 17 s for its 254 addresses. There were no page errors.
+- **A wrong radio at a saved address:** the ICD2018 was saved at the SMRS30A1's address. It wasn't taken for the SMRS30A1; it was found through the SMRS30A1's multiroom list and moved back to its own address, in under a second.
+- **A `.local` name:** the SMRS35A1, saved alone at a wrong port, was found as `<its name>.local` in under a second.
+- **"Look for it":** the Ruark, saved alone under a name with no `.local` match, was found by the scan, which stopped there.
 
 ## Decisions
 
@@ -32,7 +40,7 @@ On 2026-10-16, with the user's permission, on an ICD2018, an SMRS35A1 and an SMR
 2. **A saved speaker that stops answering is looked for by its radio id**, its MAC address, and its saved address is updated when found.
    - **Automatically:** at its address in the other speakers' multiroom lists, and at its `.local` name, all at once, the first match winning. This happens when it goes offline, and again whenever the lists show it at another address.
    - **On request:** "Look for it" in its "not reachable" notice also scans the network.
-3. **Identity is checked.** If a different radio answers at a saved address (the router gave the address to another radio), the speaker counts as unreachable instead of showing the other radio. Identity is checked again whenever a speaker comes back after being offline.
+3. **Identity is checked.** If a different radio answers at a saved address (the router gave the address to another radio), the speaker counts as unreachable instead of showing the other radio. So does a speaker whose address answers, but not as a radio: another device's web server got it. Identity is checked again whenever a speaker comes back after being offline.
 4. **The saved address stays an IP address.** A `.local` name is only a way to find the radio again: names change when a radio is renamed, and not every platform resolves them. A speaker found only by its `.local` name is saved under that name.
 
 ## Consequences

@@ -524,7 +524,10 @@ export class RadioController {
         this.update({ connection: "pin-required" });
       } else if (isFsapiError(error)) {
         this.failures++;
-        if (error.kind === "network" || error.kind === "timeout") {
+        // Nothing answers here, or something that isn't a radio (the router gave the address to
+        // another device): unreachable either way.
+        const gone = ["network", "timeout", "http", "not-found", "parse"].includes(error.kind);
+        if (gone) {
           // Whatever answers here next has to show it's still this radio.
           this.infoLoaded = false;
           this.update({ connection: "offline" });
