@@ -41,6 +41,7 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
 - ℹ️ **Device info**, including the Wi-Fi network name, which UNDOK shows as "ERROR".
 - 📱 **Phone and desktop**, light and dark, and it installs as an app.
+- 🌍 **English and Spanish**, following your browser's language.
 - 🔒 **No account, no cloud, no tracking.** Your browser talks straight to your radios on your own network.
 
 <p align="center">

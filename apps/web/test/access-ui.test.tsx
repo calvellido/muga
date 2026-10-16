@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.tsx";
-import { I18nProvider } from "../src/i18n/index.tsx";
+import { I18nProvider, loadMessages } from "../src/i18n/index.tsx";
 import en from "../src/i18n/messages/en.json";
 import type { LocalAccess } from "../src/radio/access.ts";
 import { RegistryContext } from "../src/radio/hooks.ts";
@@ -46,5 +46,21 @@ describe("local network access", () => {
     renderApp();
     expect(screen.queryByText(/Your browser will ask/)).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("in Spanish", () => {
+  it("shows the app in Spanish", async () => {
+    access = "open";
+    render(
+      <I18nProvider locale="es" messages={await loadMessages("es")}>
+        <RegistryContext.Provider value={new RadioRegistry()}>
+          <App />
+        </RegistryContext.Provider>
+      </I18nProvider>,
+    );
+    expect(screen.getByRole("heading", { name: "Aún no hay altavoces" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Buscar altavoces" })).toBeTruthy();
+    expect(document.documentElement.lang).toBe("es");
   });
 });

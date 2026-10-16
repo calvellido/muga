@@ -7,13 +7,14 @@ export type MessageId = keyof typeof en;
 export type Messages = Record<MessageId, string>;
 export type MessageValues = Record<string, string | number | boolean | Date | null | undefined>;
 
-export const SUPPORTED_LOCALES = ["en"] as const;
+export const SUPPORTED_LOCALES = ["en", "es"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 
 /** Add a language: create messages/<locale>.json and a lazy loader here (`() => import(...)`). */
 const LOADERS: Record<Locale, () => Promise<Partial<Messages>>> = {
   en: async () => en,
+  es: async () => (await import("./messages/es.json")).default,
 };
 
 const RTL_LANGUAGES = new Set(["ar", "fa", "he", "ur"]);
