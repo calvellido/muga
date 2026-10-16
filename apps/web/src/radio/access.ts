@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
  * HTTP:
  * - a page served over plain HTTP (at home, or from this computer) reaches them like any site;
  * - a secure (https) page only can in browsers with Local Network Access (Chrome, Edge), once the
- *   user allows it. Safari (every browser on iPhone and iPad) and Firefox block it as mixed content.
+ *   user allows it. Safari (every browser on iPhone and iPad) and Firefox block it as mixed content
+ *   (ADR 0012).
  */
 export type LocalAccess = "open" | "ask" | "granted" | "denied" | "blocked";
 
@@ -27,7 +28,8 @@ export async function localAccess(
   if (env.protocol !== "https:") return { access: "open" };
   if (!env.permissions) return { access: "blocked" };
   try {
-    // Only browsers with Local Network Access know this permission.
+    // Chrome's name for the permission. Firefox knows the spec's `local-network`, but still blocks
+    // plain HTTP from https pages, so asking for that one would wrongly count Firefox in.
     const status = await env.permissions.query({ name: "local-network-access" as PermissionName });
     return { access: fromState(status.state), status };
   } catch {

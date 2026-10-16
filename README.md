@@ -57,7 +57,17 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 From then on the app works without the website. It talks straight to your radios on your network, and only checks the website for updates.
 
-On an iPhone or iPad, and in Safari or Firefox on a computer, a website can't reach plain-HTTP radios yet. The app says so. There, serve Muga at home over plain HTTP instead: see "On a phone at home" below.
+In Safari or Firefox, and on an iPhone or iPad, see [Where it works](#-where-it-works).
+
+## 🧭 Where it works
+
+| Browser | From muga.calvellido.es | Served at home over plain HTTP |
+| --- | --- | --- |
+| Chrome and Edge, on a computer or Android | ✅ Installs as an app | ✅ |
+| Firefox | ❌ Not yet | ✅ |
+| Safari, and every browser on iPhone and iPad | ❌ Not yet | ✅ Add it to the home screen |
+
+Radios answer over plain HTTP, and browsers block plain HTTP from secure (https) websites. Chrome and Edge make an exception for devices on your own network, once you allow it. Safari and Firefox are working towards the same. Until then, Muga tells you so, and you can serve it at home instead: see "On a phone at home" below. Details are in [ADR 0012](docs/adr/0012-browsers-without-local-network-access.md).
 
 ## 🚀 Try it
 
@@ -76,9 +86,6 @@ To try multiroom, run `pnpm sim --speakers 4` instead: four simulated speakers o
 **As an installed app:** `pnpm web:build && pnpm web:preview`, then open http://localhost:4173 and install it from the browser.
 
 **On a phone at home, iPhone included:** `pnpm web:build && pnpm web:preview --host` serves it on your network over plain HTTP. Open the address it prints on the phone, and add it to the home screen (on an iPhone: Share, then Add to Home Screen). It needs that computer to be on.
-
-> [!NOTE]
-> Radios speak plain HTTP, and browsers block plain-HTTP requests from HTTPS pages. The exception is Chrome and Edge, which allow them to local addresses once you grant "local network access" ([ADR 0010](docs/adr/0010-hosting-with-local-network-access.md)). Elsewhere Muga has to be served over plain HTTP: from `localhost`, or from a computer on your network.
 
 ## 🧰 What's inside
 
@@ -155,7 +162,8 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 - ✅ Published at [muga.calvellido.es](https://muga.calvellido.es/), installable in Chrome and Edge
 - 🔜 Firmware updates and a carefully guarded factory reset
 - ⏸️ Stereo pairs and Bluetooth settings, for radios that support them (none of the tested ones does)
-- 💭 A small hub on your network, for discovery, live updates, and the iPhone over HTTPS
+- ⏳ Safari, Firefox and the iPhone from the website, once their browsers allow it
+- 💭 A small hub on your network, for live updates, and the iPhone over HTTPS
 
 ## 🙏 Acknowledgements
 

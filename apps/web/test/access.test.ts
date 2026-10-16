@@ -30,10 +30,22 @@ describe("localAccess", () => {
   });
 
   it("is blocked on a secure page in browsers without Local Network Access", async () => {
-    // Safari and Firefox don't know the permission, and block plain HTTP from https pages.
+    // Safari knows neither name, and blocks plain HTTP from https pages.
     expect((await localAccess({ protocol: "https:", permissions: permissions() })).access).toBe(
       "blocked",
     );
     expect((await localAccess({ protocol: "https:" })).access).toBe("blocked");
+  });
+
+  it("is blocked in Firefox, which has the permission but no exemption from mixed content", async () => {
+    const firefox = {
+      query: async ({ name }: PermissionDescriptor) => {
+        if (String(name) !== "local-network") throw new TypeError(`'${name}' is not valid.`);
+        return { state: "granted" } as PermissionStatus;
+      },
+    };
+    expect((await localAccess({ protocol: "https:", permissions: firefox })).access).toBe(
+      "blocked",
+    );
   });
 });
