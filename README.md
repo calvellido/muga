@@ -13,6 +13,7 @@
 <p align="center">
   <a href="https://muga.calvellido.es/"><img alt="Open the app: muga.calvellido.es" src="https://img.shields.io/badge/app-muga.calvellido.es-157552"></a>
   <a href="https://github.com/calvellido/muga/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/calvellido/muga/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="CHANGELOG.md"><img alt="Version" src="https://img.shields.io/github/v/tag/calvellido/muga?label=version&color=157552"></a>
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-157552"></a>
   <img alt="Installable web app" src="https://img.shields.io/badge/PWA-installable-157552">
   <img alt="TypeScript, strict" src="https://img.shields.io/badge/TypeScript-strict-3178c6">
@@ -159,11 +160,15 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 
 ## 🗺️ Roadmap
 
+**Muga 1.0** came out in October 2026: what's in it is in the [changelog](CHANGELOG.md).
+
 - ✅ Protocol core, simulator and command-line tool
 - ✅ Web app: now playing, controls, volume, sources and presets
 - ✅ Menu browsing, preset editing, FM tuner, DAB scan and settings
 - ✅ Multiroom groups
 - ✅ Published at [muga.calvellido.es](https://muga.calvellido.es/), installable in Chrome and Edge
+- ✅ Finds speakers on the network, and follows them when their address changes
+- ✅ English and Spanish, and Muga settings for the language and theme
 - 🔜 Firmware updates and a carefully guarded factory reset
 - ⏸️ Stereo pairs and Bluetooth settings, for radios that support them (none of the tested ones does)
 - ⏳ Safari, Firefox and the iPhone from the website, once their browsers allow it

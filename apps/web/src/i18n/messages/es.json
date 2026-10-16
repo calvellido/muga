@@ -13,6 +13,7 @@
   "appSettings.theme.dark": "Oscuro",
   "appSettings.theme.hint": "En automático sigue el ajuste de este dispositivo.",
   "appSettings.note": "Estos ajustes se guardan en este navegador. Los ajustes de cada altavoz están en su página.",
+  "appSettings.version": "Muga {version}",
   "title.nowPlaying": "{mark} {what} | Muga",
   "radios.title": "Altavoces",
   "radios.connect": "Conectar un altavoz",

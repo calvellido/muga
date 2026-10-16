@@ -1,6 +1,6 @@
 {
   "name": "@muga/web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Muga web app: an installable PWA that controls FSAPI radios directly from the browser",
   "license": "MIT",

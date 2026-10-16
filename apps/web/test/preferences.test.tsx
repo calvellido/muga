@@ -73,6 +73,7 @@ describe("Muga settings", () => {
     expect(screen.getByRole("heading", { name: "No speakers yet" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Muga settings" }));
+    expect(screen.getByText("Muga 1.0.0")).toBeTruthy();
     const language = screen.getByRole("group", { name: "Language" });
     await user.click(within(language).getByRole("button", { name: "Español" }));
     expect(await screen.findByRole("heading", { name: "Ajustes de Muga" })).toBeTruthy();

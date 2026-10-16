@@ -1,5 +1,6 @@
 {
   "name": "muga",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Muga: a web controller for Frontier Silicon FSAPI internet radios",
