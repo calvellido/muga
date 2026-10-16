@@ -1,53 +1,43 @@
-/* Design tokens */
+/* Design tokens: light-dark() picks a side by color-scheme, the device's unless Muga settings
+   choose one (data-theme, ADR 0014). */
 :root {
   color-scheme: light dark;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --bg: #f3f6f4;
-  --surface: #ffffff;
-  --surface-2: #eaf0ed;
-  --surface-3: #dbe4df;
-  --text: #13201b;
-  --text-muted: #56665f;
-  --border: #d9e2dd;
-  --accent: #157552;
-  --accent-strong: #0f5c40;
-  --accent-contrast: #ffffff;
-  --accent-soft: #dcefe5;
-  --warn: #8a5200;
-  --warn-soft: #fbefd9;
-  --danger: #b42318;
-  --danger-soft: #fde6e4;
-  --focus: #157552;
-  --shadow: 0 1px 2px rgb(16 32 26 / 5%), 0 10px 30px rgb(16 32 26 / 7%);
+  --bg: light-dark(#f3f6f4, #0c1210);
+  --surface: light-dark(#ffffff, #141c19);
+  --surface-2: light-dark(#eaf0ed, #1b2622);
+  --surface-3: light-dark(#dbe4df, #26332e);
+  --text: light-dark(#13201b, #e6eee9);
+  --text-muted: light-dark(#56665f, #94a59d);
+  --border: light-dark(#d9e2dd, #25322d);
+  --accent: light-dark(#157552, #3fcf8e);
+  --accent-strong: light-dark(#0f5c40, #66dca6);
+  --accent-contrast: light-dark(#ffffff, #052016);
+  --accent-soft: light-dark(#dcefe5, #15392a);
+  --warn: light-dark(#8a5200, #f5b84d);
+  --warn-soft: light-dark(#fbefd9, #36280e);
+  --danger: light-dark(#b42318, #ff8a80);
+  --danger-soft: light-dark(#fde6e4, #3b1714);
+  --focus: light-dark(#157552, #66dca6);
+  --shadow:
+    0 1px 2px light-dark(rgb(16 32 26 / 5%), rgb(0 0 0 / 40%)),
+    0 10px 30px light-dark(rgb(16 32 26 / 7%), rgb(0 0 0 / 30%));
 
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 22px;
+  /* Boxes are only slightly rounded; buttons, chips and tabs are pills, icon buttons circles. */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --r-full: 999px;
   --gutter: 16px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0c1210;
-    --surface: #141c19;
-    --surface-2: #1b2622;
-    --surface-3: #26332e;
-    --text: #e6eee9;
-    --text-muted: #94a59d;
-    --border: #25322d;
-    --accent: #3fcf8e;
-    --accent-strong: #66dca6;
-    --accent-contrast: #052016;
-    --accent-soft: #15392a;
-    --warn: #f5b84d;
-    --warn-soft: #36280e;
-    --danger: #ff8a80;
-    --danger-soft: #3b1714;
-    --focus: #66dca6;
-    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 10px 30px rgb(0 0 0 / 30%);
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* Base */
@@ -206,6 +196,37 @@ input {
 
 .sidebar__footer {
   margin-block-start: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar__settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sidebar__settings:hover {
+  background: var(--surface-2);
+}
+
+.sidebar__settings[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.sidebar__tagline {
+  margin: 0;
   padding-inline: 12px;
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -228,16 +249,14 @@ input {
 }
 
 @media (min-width: 900px) {
-  .app {
-    grid-template-rows: 1fr;
-  }
-
-  /* The speaker list's column, once there are speakers (the welcome screen has the page). */
+  /* The speaker list's column, once there are speakers. Without them, the top bar stays. */
   .app:has(> .sidebar) {
+    grid-template-rows: 1fr;
     grid-template-columns: 300px minmax(0, 1fr);
   }
 
-  .topbar,
+  /* The sidebar has the logo once there are speakers; the welcome screen keeps the top bar. */
+  .app:has(> .sidebar) > .topbar,
   .sidebar .sidebar__close,
   .backdrop {
     display: none;
@@ -1056,6 +1075,11 @@ input {
 
 .settings__header h2 {
   font-size: 1.25rem;
+}
+
+.app-settings__note {
+  margin-block-start: 16px;
+  font-size: 0.9rem;
 }
 
 .settings-grid {

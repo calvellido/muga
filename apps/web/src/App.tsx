@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AppSettings } from "./components/AppSettings.tsx";
 import { ConnectForm } from "./components/ConnectForm.tsx";
 import { FindSpeakers } from "./components/FindSpeakers.tsx";
 import { GroupView } from "./components/GroupView.tsx";
@@ -58,6 +59,7 @@ export function App() {
   const activeGroup = useMultiroom().groups.find((g) => g.id === activeGroupId);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // At narrow widths the sidebar is an off-canvas drawer: keep it out of tab order and the
   // accessibility tree while closed.
   const wide = useMediaQuery("(min-width: 900px)");
@@ -92,11 +94,32 @@ export function App() {
     setDrawerOpen(false);
     setConnecting(false);
   };
+  // Picking or connecting a speaker shows it, leaving Muga's settings.
+  const showSpeaker = () => {
+    closeDrawer();
+    setSettingsOpen(false);
+  };
+  // Muga's own settings: at the foot of the speaker list, or in the top bar before there is one.
+  const toggleSettings = () => {
+    closeDrawer();
+    setSettingsOpen((open) => !open);
+  };
 
   return (
     <div className="app">
       <header className="topbar">
         <Brand />
+        {radios.length === 0 && (
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t("appSettings.open")}
+            aria-pressed={settingsOpen}
+            onClick={toggleSettings}
+          >
+            <Icon name="gear" />
+          </button>
+        )}
         {radios.length > 0 && (
           <button
             ref={switcherRef}
@@ -135,12 +158,12 @@ export function App() {
             </button>
           </div>
           <h2 className="sidebar__title">{t("radios.title")}</h2>
-          <RadioList onSelect={closeDrawer} />
-          <DiscoveredSpeakers onConnected={closeDrawer} />
+          <RadioList onSelect={showSpeaker} />
+          <DiscoveredSpeakers onConnected={showSpeaker} />
           <div className="sidebar__connect">
             <FindSpeakers quiet />
             {connecting ? (
-              <ConnectForm onDone={closeDrawer} onCancel={() => setConnecting(false)} />
+              <ConnectForm onDone={showSpeaker} onCancel={() => setConnecting(false)} />
             ) : (
               <button
                 type="button"
@@ -152,7 +175,18 @@ export function App() {
               </button>
             )}
           </div>
-          <p className="sidebar__footer">{t("app.tagline")}</p>
+          <div className="sidebar__footer">
+            <button
+              type="button"
+              className="sidebar__settings"
+              aria-pressed={settingsOpen}
+              onClick={toggleSettings}
+            >
+              <Icon name="gear" size={20} />
+              {t("appSettings.open")}
+            </button>
+            <p className="sidebar__tagline">{t("app.tagline")}</p>
+          </div>
         </aside>
       )}
       {drawerOpen && (
@@ -165,7 +199,9 @@ export function App() {
       )}
 
       <main className="main">
-        {radios.length === 0 ? (
+        {settingsOpen ? (
+          <AppSettings onClose={() => setSettingsOpen(false)} />
+        ) : radios.length === 0 ? (
           <Welcome />
         ) : activeGroup ? (
           <GroupView key={activeGroup.id} groupId={activeGroup.id} />

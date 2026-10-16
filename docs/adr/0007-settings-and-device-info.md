@@ -27,7 +27,7 @@ Date: 2026-10-15. Status: accepted.
    - **Equalizer:** `sys.audio.eqPreset`; preset key 0 is the custom one. Its bands come from `sys.caps.eqBands` and are written to `sys.audio.eqCustom.param0..4`, latest value wins.
    - **Radio language:** `sys.lang`. Source names are localised, so identity and sources are read again afterwards.
    - **Clock:** format, source and DST are each one SET. A network time zone writes `utcOffset`, then the region label, but only where `sys.clock.timeZone` exists. Manual time writes `localDate`/`localTime` from this device's clock, to the minute. After each change Muga waits briefly, then re-reads the radio's time.
-4. **Device info shows the network name properly.** UNDOK shows "ERROR (Wi-Fi)". Muga decodes `sys.net.wlan.connectedSSID` as the byte array it is. The MAC address shown is the wired one when Ethernet is enabled. The address shown is the one Muga uses to reach the radio.
+4. **Device info shows the network name.** Muga decodes `sys.net.wlan.connectedSSID`, a byte array, into the name, as UNDOK does. (Corrected 2026-10-16: this first said UNDOK showed the name wrongly. It shows it correctly; the tested network's name had been mistaken for an error.) The MAC address shown is the wired one when Ethernet is enabled. The address shown is the one Muga uses to reach the radio.
 5. **Time zones as the radio lists them.** Zones without a label show their offset ("UTC−11:30"). Labelled ones get the offset in front ("UTC+02:00 · Atenas, Cairo"). The current zone is found by label when the radio stores one, else by offset.
 6. **Left for later:** factory reset (Phase 5, behind strong confirmation), external audio delay (its units are unknown), and "keep network connected" (a hidden dialog in UNDOK).
 
