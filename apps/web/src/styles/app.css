@@ -24,11 +24,10 @@
     0 1px 2px light-dark(rgb(16 32 26 / 5%), rgb(0 0 0 / 40%)),
     0 10px 30px light-dark(rgb(16 32 26 / 7%), rgb(0 0 0 / 30%));
 
-  /* Corners: rounded, not round. Pills and circles are kept for dots, lines and the play button. */
-  --r-sm: 7px;
-  --r-md: 10px;
-  --r-lg: 16px;
-  --r-control: 12px;
+  /* Boxes are only slightly rounded; buttons, chips and tabs are pills, icon buttons circles. */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --r-full: 999px;
   --gutter: 16px;
 }
@@ -138,7 +137,7 @@ input {
   min-block-size: 40px;
   padding-inline: 14px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: var(--surface);
   font-weight: 600;
   cursor: pointer;
@@ -362,7 +361,7 @@ input {
   min-block-size: 44px;
   padding-inline: 18px;
   border: 1px solid transparent;
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 650;
@@ -418,7 +417,7 @@ input {
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -630,7 +629,6 @@ input {
 .transport__main.icon-button {
   inline-size: 64px;
   block-size: 64px;
-  border-radius: var(--r-full);
   background: var(--accent);
   color: var(--accent-contrast);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
@@ -690,7 +688,7 @@ input {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: var(--surface-2);
 }
 
@@ -699,7 +697,7 @@ input {
   min-block-size: 40px;
   padding-inline: 12px;
   border: 0;
-  border-radius: calc(var(--r-control) - 4px);
+  border-radius: var(--r-full);
   background: transparent;
   color: var(--text-muted);
   font-weight: 650;
@@ -926,7 +924,7 @@ input {
   min-block-size: 44px;
   padding: 10px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: var(--surface);
   font-size: 1rem;
 }
@@ -1116,7 +1114,7 @@ input {
   min-block-size: 40px;
   padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: var(--r-control);
+  border-radius: var(--r-full);
   background: var(--surface);
   font-weight: 600;
   cursor: pointer;
