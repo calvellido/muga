@@ -157,6 +157,15 @@ export function isPlaying(status: unknown): boolean {
   return PLAYING.has(status);
 }
 
+/** Something plays on this radio, or is paused: what the page's title shows. */
+export function hasPlayback(s: RadioSnapshot): boolean {
+  return (
+    s.connection === "online" &&
+    s.power !== false &&
+    (isPlaying(s.play.status) || s.play.status === "PAUSED")
+  );
+}
+
 /** Larger artwork where the service supports it (UNDOK does the same, doc 05 §2.1). */
 function artwork(uri: string | undefined): string {
   return (uri ?? "").trim().replace("150x150", "500x500");
@@ -325,8 +334,9 @@ export class RadioController {
   }
 
   /**
-   * While the page is hidden, a radio on screen is still read at the background rate, so the
-   * page's title can follow what it plays. The others pause. Shown again, it's read right away.
+   * While the page is hidden, a radio on screen is still read at the background rate while it
+   * plays (or is paused), so the page's title can follow it. Otherwise nothing is read until the
+   * page is shown again, and then right away.
    */
   setHidden(hidden: boolean): void {
     if (this.hidden === hidden) return;
@@ -451,7 +461,7 @@ export class RadioController {
   private schedule(delay?: number): void {
     clearTimeout(this.timer);
     if (!this.running || this.snapshot.connection === "pin-required") return;
-    if (this.hidden && !this.active) return;
+    if (this.hidden && !(this.active && hasPlayback(this.snapshot))) return;
     const base =
       this.active && !this.hidden ? this.opts.activeIntervalMs : this.opts.backgroundIntervalMs;
     const wait =

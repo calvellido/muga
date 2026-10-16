@@ -27,25 +27,32 @@ function speaker(play: Partial<PlayState>, patch: Partial<RadioSnapshot> = {}): 
   };
 }
 
+const title = (play: Partial<PlayState>, patch: Partial<RadioSnapshot> = {}, muted = false) =>
+  pageTitle(speaker(play, patch), "Kitchen", t, muted);
+
 describe("pageTitle", () => {
   it("puts what's playing first, with the artist when there is one", () => {
-    expect(pageTitle(speaker({ name: "Jazz Lounge 7" }), "Kitchen", t)).toBe(
-      "▶ Jazz Lounge 7 — Kitchen",
-    );
-    expect(pageTitle(speaker({ name: "So What", artist: "Miles Davis" }), "Kitchen", t)).toBe(
-      "▶ So What · Miles Davis — Kitchen",
+    expect(title({ name: "Jazz Lounge 7" })).toBe("▶ Jazz Lounge 7 | Kitchen | Muga");
+    expect(title({ name: "So What", artist: "Miles Davis" })).toBe(
+      "▶ So What - Miles Davis | Kitchen | Muga",
     );
   });
 
-  it("names the source when it reports nothing, and marks a pause", () => {
-    expect(pageTitle(speaker({}), "Kitchen", t)).toBe("▶ CD — Kitchen");
-    expect(pageTitle(speaker({ status: "PAUSED" }), "Kitchen", t)).toBe("⏸ CD — Kitchen");
+  it("names the source when it reports nothing", () => {
+    expect(title({})).toBe("▶ CD | Kitchen | Muga");
   });
 
-  it("names only the speaker when nothing plays, and the app without one", () => {
-    expect(pageTitle(speaker({ status: "STOPPED" }), "Kitchen", t)).toBe("Kitchen — Muga");
-    expect(pageTitle(speaker({}, { power: false }), "Kitchen", t)).toBe("Kitchen — Muga");
-    expect(pageTitle(speaker({}, { connection: "offline" }), "Kitchen", t)).toBe("Kitchen — Muga");
+  it("marks a pause, buffering and a muted speaker", () => {
+    expect(title({ status: "PAUSED" })).toBe("⏸ CD | Kitchen | Muga");
+    expect(title({ status: "BUFFERING" })).toBe("⏳ CD | Kitchen | Muga");
+    expect(title({}, {}, true)).toBe("🔇 CD | Kitchen | Muga");
+  });
+
+  it("is just the app's name when nothing plays", () => {
+    expect(title({ status: "STOPPED" })).toBe("Muga");
+    expect(title({}, { power: false })).toBe("Muga");
+    expect(title({}, { connection: "offline" })).toBe("Muga");
+    expect(title({}, { modeKey: undefined })).toBe("Muga");
     expect(pageTitle(undefined, "", t)).toBe("Muga");
   });
 });

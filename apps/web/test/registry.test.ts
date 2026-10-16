@@ -105,7 +105,7 @@ describe("RadioRegistry", () => {
 });
 
 describe("while the page is hidden", () => {
-  it("still reads the speaker on screen, slowly, and pauses the others", async () => {
+  it("reads only the speaker on screen, slowly, and only while it plays", async () => {
     const home = await startSimulatedHome({ speakers: 2 });
     try {
       const [living, kitchen] = home.speakers;
@@ -119,7 +119,15 @@ describe("while the page is hidden", () => {
       const away = await r.connect(living.host);
       const shown = await r.connect(kitchen.host);
       const name = (id: string) => r.controller(id)?.getSnapshot().play.name;
-      await vi.waitFor(() => expect(name(away.id)).toBe(name(shown.id)));
+      const status = () => r.controller(shown.id)?.getSnapshot().play.status;
+      for (const speaker of [living, kitchen]) {
+        speaker.set("netRemote.sys.power", 1);
+        speaker.set("netRemote.play.status", 2);
+      }
+      await vi.waitFor(() => expect(status()).toBe("PLAYING"));
+      await vi.waitFor(() =>
+        expect(r.controller(away.id)?.getSnapshot().play.status).toBe("PLAYING"),
+      );
 
       r.setVisible(false);
       // A poll already under way still finishes.
@@ -130,7 +138,17 @@ describe("while the page is hidden", () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
       expect(name(away.id)).not.toBe("Away station");
 
+      // Once nothing plays there, nothing is read at all.
+      kitchen.set("netRemote.play.status", 6);
+      await vi.waitFor(() => expect(status()).toBe("STOPPED"));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const stopped = name(shown.id);
+      kitchen.set("netRemote.play.info.name", "Later station");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(name(shown.id)).toBe(stopped);
+
       r.setVisible(true);
+      await vi.waitFor(() => expect(name(shown.id)).toBe("Later station"));
       await vi.waitFor(() => expect(name(away.id)).toBe("Away station"));
     } finally {
       await home.close();

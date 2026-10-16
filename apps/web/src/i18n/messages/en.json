@@ -1,9 +1,7 @@
 {
   "app.name": "Muga",
   "app.tagline": "Your internet radios, from any browser",
-  "title.playing": "▶ {what} — {name}",
-  "title.paused": "⏸ {what} — {name}",
-  "title.speaker": "{name} — Muga",
+  "title.nowPlaying": "{mark} {what} | {name} | Muga",
   "radios.title": "Speakers",
   "radios.connect": "Connect a speaker",
   "radios.switch": "Switch speaker",
