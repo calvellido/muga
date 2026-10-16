@@ -11,6 +11,9 @@ export const SUPPORTED_LOCALES = ["en", "es"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 
+/** Each language's name in that language, as language pickers show them. */
+export const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", es: "Español" };
+
 /** Add a language: create messages/<locale>.json and a lazy loader here (`() => import(...)`). */
 const LOADERS: Record<Locale, () => Promise<Partial<Messages>>> = {
   en: async () => en,

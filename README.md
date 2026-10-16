@@ -40,8 +40,8 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - 🔎 **Finds your speakers**: "Find speakers" looks for radios on your network, so there's no IP address to type. And when your router gives a speaker a new address, Muga finds it again.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
 - ℹ️ **Device info**, including the Wi-Fi network name, which UNDOK shows as "ERROR".
-- 📱 **Phone and desktop**, light and dark, and it installs as an app.
-- 🌍 **English and Spanish**, following your browser's language.
+- 📱 **Phone and desktop**, light or dark, and it installs as an app.
+- 🌍 **English and Spanish**: your browser's language, or the one you pick in Muga settings (the gear next to the logo).
 - 🔒 **No account, no cloud, no tracking.** Your browser talks straight to your radios on your own network.
 
 <p align="center">

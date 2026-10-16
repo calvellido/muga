@@ -11,7 +11,7 @@ UNDOK's own Spanish was looked at for terms only. It mixes "Presets" with "Preaj
 ## Decisions
 
 1. **Spanish from Spain, with the informal "tú"**, as in Chrome's own Spanish. Every Spanish variant (`es-ES`, `es-MX`, …) gets it.
-2. **The language follows the browser's preferred languages**: the first supported one wins, otherwise English. There's no choice inside Muga yet.
+2. **The language follows the browser's preferred languages**, the first supported one winning, otherwise English, unless one is picked in Muga settings (ADR 0014).
 3. **The catalog is loaded only when needed**: `messages/es.json` is a separate download of about 14 KB, and the service worker caches it for offline use.
 4. **One word per idea**, keeping ADR 0009's verbs:
 
@@ -29,6 +29,7 @@ UNDOK's own Spanish was looked at for terms only. It mixes "Presets" with "Preaj
    | leads (a group) | lidera |
    | ungroup | desagrupar |
    | sleep timer | temporizador de apagado |
+   | loudness | sonoridad |
    | streaming quality | calidad de transmisión |
    | not reachable | no responde |
    | plain HTTP | HTTP sin cifrar |
@@ -42,7 +43,6 @@ UNDOK's own Spanish was looked at for terms only. It mixes "Presets" with "Preaj
 6. **Left as they are:**
    - **Text from the radio:** station and source names, menus, equalizer presets and time zones, in the radio's own language (its "Radio language" setting).
    - **Technical details in error messages**, which come from the protocol.
-   - **"Loudness"**, as Spanish hi-fi menus call it.
    - **The install manifest's description.**
 
 ## Consequences

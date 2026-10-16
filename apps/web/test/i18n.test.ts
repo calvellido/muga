@@ -31,6 +31,7 @@ const SAMPLE_VALUES = {
   done: 120,
   what: "Jazz Lounge 7",
   mark: "▶",
+  language: "English",
 };
 
 describe("messages", () => {
