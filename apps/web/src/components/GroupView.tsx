@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import type { RadioController } from "../radio/controller.ts";
-import { useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
+import { useDocumentTitle, useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
 import type { MultiroomGroup } from "../radio/multiroom.ts";
 import type { RadioSnapshot } from "../radio/types.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
@@ -11,7 +11,7 @@ import { MultiroomStatus } from "./MultiroomNotices.tsx";
 import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
 import { members } from "./RadioList.tsx";
-import { statusLine } from "./status.ts";
+import { pageTitle, statusLine } from "./status.ts";
 import { Transport } from "./Transport.tsx";
 import { VolumeSlider } from "./VolumeControl.tsx";
 
@@ -27,6 +27,7 @@ export function GroupView({ groupId }: { groupId: string }) {
   const server = useRadio(group?.server.radioId);
   const [editing, setEditing] = useState(false);
   const editButton = useRef<HTMLButtonElement>(null);
+  useDocumentTitle(pageTitle(server?.snapshot, group?.name ?? "", t), t("app.name"));
   if (!group || !server) return null;
   const { snapshot, controller } = server;
   const { text, tone } = statusLine(snapshot, t);

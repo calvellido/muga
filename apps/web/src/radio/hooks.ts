@@ -69,6 +69,19 @@ export function useMediaQuery(query: string): boolean {
   );
 }
 
+/** Shows `title` as the page's title while mounted, and `restore` afterwards. */
+export function useDocumentTitle(title: string, restore: string): void {
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+  useEffect(
+    () => () => {
+      document.title = restore;
+    },
+    [restore],
+  );
+}
+
 /** Current time, refreshed every `intervalMs` while `enabled` (for the playback position). */
 export function useNow(intervalMs: number, enabled: boolean): number {
   const [now, setNow] = useState(() => Date.now());

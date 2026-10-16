@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import { currentModeId } from "../radio/controller.ts";
-import { useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
+import { useDocumentTitle, useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
 import { Icon } from "./Icon.tsx";
 import { Library, TakeOverSources } from "./Library.tsx";
@@ -10,7 +10,7 @@ import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
 import { members } from "./RadioList.tsx";
 import { Settings } from "./Settings.tsx";
-import { statusLine } from "./status.ts";
+import { pageTitle, statusLine } from "./status.ts";
 import { Transport } from "./Transport.tsx";
 import { Tuner } from "./Tuner.tsx";
 import { VolumeControl } from "./VolumeControl.tsx";
@@ -32,14 +32,16 @@ export function RadioView({ id }: { id: string }) {
   const server = useRadio(client ? group.server.radioId : undefined);
   const serverController = server?.controller;
   useEffect(() => serverController?.watch(), [serverController]);
-  if (!radio) return null;
+  const shown = client && server ? server.snapshot : radio?.snapshot;
+  const title = pageTitle(shown, radio?.snapshot.name ?? "", t, radio?.snapshot.muted);
+  useDocumentTitle(title, t("app.name"));
+  if (!radio || !shown) return null;
   const { snapshot, controller } = radio;
   const { text, tone } = statusLine(snapshot, t);
   const canPower = snapshot.connection === "online" && snapshot.power !== undefined;
   // Multiroom speakers that aren't in a group yet can start one.
   const canGroup = speakers.some((s) => s.radioId === id) && !group;
   const playing = snapshot.connection === "online" && snapshot.power !== false;
-  const shown = client && server ? server.snapshot : snapshot;
   const status =
     client && playing
       ? [t("groups.status.member", { group: group.name }), shown.play.name]

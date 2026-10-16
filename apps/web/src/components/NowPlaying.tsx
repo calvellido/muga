@@ -5,7 +5,7 @@ import { isPlaying } from "../radio/controller.ts";
 import { useNow } from "../radio/hooks.ts";
 import type { RadioSnapshot } from "../radio/types.ts";
 import { Icon } from "./Icon.tsx";
-import { formatDuration, playStatusLabel } from "./status.ts";
+import { formatDuration, playStatusLabel, sourceLabel } from "./status.ts";
 
 function Artwork({ url, name }: { url: string; name: string }) {
   const t = useT();
@@ -66,7 +66,9 @@ export function NowPlaying({ snapshot }: { snapshot: RadioSnapshot }) {
       ? Math.min(play.durationMs, play.positionMs + Math.max(0, now - play.positionAt))
       : play.positionMs;
 
-  const title = play.name || t("nowPlaying.nothing");
+  // Some sources report no track details at all, such as a CD on the ICD2018: name the source.
+  const title =
+    play.name || (snapshot.power !== false && sourceLabel(snapshot)) || t("nowPlaying.nothing");
   // As UNDOK: "artist · album", else the album, else the free text (doc 05 §2.1).
   const subtitle = play.artist
     ? [play.artist, play.album].filter(Boolean).join(" · ")
