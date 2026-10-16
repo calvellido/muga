@@ -11,6 +11,7 @@
 </p>
 
 <p align="center">
+  <a href="https://calvellido.es/muga/"><img alt="Open the app: calvellido.es/muga" src="https://img.shields.io/badge/app-calvellido.es%2Fmuga-157552"></a>
   <a href="https://github.com/calvellido/muga/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/calvellido/muga/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-157552"></a>
   <img alt="Installable web app" src="https://img.shields.io/badge/PWA-installable-157552">
@@ -48,6 +49,16 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
   <img src="docs/images/phone-settings.png" width="260" alt="Muga on a phone in dark mode: the settings for the living room speaker, with its name, sleep timer and equalizer presets.">
 </p>
 
+## 📲 Use it
+
+1. Open **[calvellido.es/muga](https://calvellido.es/muga/)** in Chrome or Edge, on a computer or an Android phone.
+2. Install it from the address bar or the browser menu.
+3. Connect your first radio by its IP address and PIN, and allow local network access when the browser asks.
+
+From then on the app works without the website. It talks straight to your radios on your network, and only checks the website for updates.
+
+On an iPhone or iPad, and in Safari or Firefox on a computer, a website can't reach plain-HTTP radios yet. The app says so. There, serve Muga at home over plain HTTP instead: see "On a phone at home" below.
+
 ## 🚀 Try it
 
 You need Node 22 or later and pnpm 10. No radio is needed to try it: Muga ships with a simulated one.
@@ -64,10 +75,10 @@ To try multiroom, run `pnpm sim --speakers 4` instead: four simulated speakers o
 
 **As an installed app:** `pnpm web:build && pnpm web:preview`, then open http://localhost:4173 and install it from the browser.
 
-**On a phone:** `pnpm web:preview --host` serves it on your network, so you can open the address it prints. Installing it as an app on a phone needs HTTPS, which comes with the planned hub (see the roadmap).
+**On a phone at home, iPhone included:** `pnpm web:build && pnpm web:preview --host` serves it on your network over plain HTTP. Open the address it prints on the phone, and add it to the home screen (on an iPhone: Share, then Add to Home Screen). It needs that computer to be on.
 
 > [!NOTE]
-> Radios speak plain HTTP, and browsers block plain-HTTP requests from HTTPS pages. So Muga is served over plain HTTP too: from `localhost`, which browsers treat as secure, or from your computer's address on the network.
+> Radios speak plain HTTP, and browsers block plain-HTTP requests from HTTPS pages. The exception is Chrome and Edge, which allow them to local addresses once you grant "local network access" ([ADR 0010](docs/adr/0010-hosting-with-local-network-access.md)). Elsewhere Muga has to be served over plain HTTP: from `localhost`, or from a computer on your network.
 
 ## 🧰 What's inside
 
@@ -132,7 +143,8 @@ Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, de
 - ✅ Multiroom groups
 - 🔜 Stereo pairs
 - 🔜 Firmware updates, Bluetooth settings and a carefully guarded factory reset
-- 💭 A small hub on your network, for discovery, live updates and HTTPS on phones
+- ✅ Published at [calvellido.es/muga](https://calvellido.es/muga/), installable in Chrome and Edge
+- 💭 A small hub on your network, for discovery, live updates, and the iPhone over HTTPS
 
 ## 🙏 Acknowledgements
 

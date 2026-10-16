@@ -229,8 +229,12 @@ input {
 
 @media (min-width: 900px) {
   .app {
-    grid-template-columns: 300px minmax(0, 1fr);
     grid-template-rows: 1fr;
+  }
+
+  /* The speaker list's column, once there are speakers (the welcome screen has the page). */
+  .app:has(> .sidebar) {
+    grid-template-columns: 300px minmax(0, 1fr);
   }
 
   .topbar,
@@ -1641,4 +1645,8 @@ input {
 .takeover__hint {
   margin-block: 4px 14px;
   font-size: 0.9rem;
+}
+
+.access-hint {
+  margin-block-end: 4px;
 }

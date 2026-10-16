@@ -17,7 +17,7 @@ function Brand() {
   const t = useT();
   return (
     <div className="brand">
-      <img src="/icon.svg" alt="" width={32} height={32} />
+      <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={32} height={32} />
       <span>{t("app.name")}</span>
     </div>
   );
@@ -27,7 +27,13 @@ function Welcome() {
   const t = useT();
   return (
     <div className="welcome">
-      <img className="welcome__logo" src="/icon.svg" alt="" width={72} height={72} />
+      <img
+        className="welcome__logo"
+        src={`${import.meta.env.BASE_URL}icon.svg`}
+        alt=""
+        width={72}
+        height={72}
+      />
       <div>
         <h1>{t("radios.empty.title")}</h1>
         <p className="muted">{t("radios.empty.body")}</p>

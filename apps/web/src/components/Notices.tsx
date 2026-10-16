@@ -1,8 +1,10 @@
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { useT } from "../i18n/index.tsx";
+import { useLocalAccess } from "../radio/access.ts";
 import type { RadioController } from "../radio/controller.ts";
 import { useRegistry } from "../radio/hooks.ts";
 import type { RadioSnapshot } from "../radio/types.ts";
+import { AccessNotice } from "./AccessNotice.tsx";
 import { Icon } from "./Icon.tsx";
 
 interface Props {
@@ -16,9 +18,14 @@ interface Props {
  */
 export function Notices({ snapshot, controller, name = snapshot.name }: Props & { name?: string }) {
   const t = useT();
+  const access = useLocalAccess();
   const { connection, power } = snapshot;
 
   if (connection === "pin-required") return <PinPrompt snapshot={snapshot} />;
+  // The browser may be what keeps the radio out of reach.
+  if (connection === "offline" && (access === "blocked" || access === "denied")) {
+    return <AccessNotice access={access} />;
+  }
   if (connection === "offline") {
     return (
       <div className="notice notice--warn" role="status">
