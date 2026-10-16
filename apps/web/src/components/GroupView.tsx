@@ -60,6 +60,18 @@ export function GroupView({ groupId }: { groupId: string }) {
         </div>
         <div className="radio-header__actions">
           <button
+            type="button"
+            className={`button button--compact power-button${snapshot.power ? " button--ghost" : ""}`}
+            disabled={snapshot.connection !== "online" || snapshot.power === undefined}
+            aria-pressed={snapshot.power === true}
+            onClick={() => void controller.setPower(!snapshot.power)}
+          >
+            <Icon name="power" size={20} />
+            <span className="button__text">
+              {snapshot.power ? t("power.standby") : t("power.on")}
+            </span>
+          </button>
+          <button
             ref={editButton}
             type="button"
             className="button button--ghost button--compact"
@@ -74,7 +86,8 @@ export function GroupView({ groupId }: { groupId: string }) {
       </header>
 
       <MultiroomStatus />
-      <Notices snapshot={snapshot} controller={controller} />
+      {/* Standby on the server is standby for the whole group. */}
+      <Notices snapshot={snapshot} controller={controller} name={group.name} />
 
       {editing ? (
         <GroupEditor

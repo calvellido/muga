@@ -119,9 +119,11 @@ describe("MultiroomDirectory", () => {
     });
     await server?.mixer.setClientVolume(1, 9);
     expect(bedroom?.get("netRemote.sys.audio.volume")).toBe(9);
+    // 14, 10 and 9 average 11: a master of 7 takes 4 steps off each, as real radios do.
     await server?.mixer.setMaster(7);
-    expect(living?.get("netRemote.sys.audio.volume")).toBe(9);
+    expect(living?.get("netRemote.sys.audio.volume")).toBe(10);
     expect(kitchen?.get("netRemote.sys.audio.volume")).toBe(6);
+    expect(home.speakers[2]?.get("netRemote.sys.audio.volume")).toBe(5);
     await server?.mixer.setGroupMute(true, [0, 1]);
     expect(kitchen?.get("netRemote.sys.audio.mute")).toBe(1);
     expect(living?.get("netRemote.sys.audio.mute")).toBe(1);

@@ -72,6 +72,7 @@ const NO_CLIENT = 255;
 /** `sys.mode` of a client, and of a speaker that left a group: no source. */
 const NO_MODE = 0xffff_ffff;
 const PLAY_IDLE = 0;
+const PLAY_PLAYING = 2;
 
 /**
  * Frontier multiroom as an ICD2018 (V2.13), an SMRS30A1 (V2.11) and a Ruark MRx (V2.14) showed
@@ -80,12 +81,14 @@ const PLAY_IDLE = 0;
  *   server plays (its `play.status` follows the server's);
  * - a speaker that leaves a group, or whose group ends, is idle with no source;
  * - `group.state` SERVER (or `becomeServer`) on a client is accepted but changes nothing;
- * - a speaker with no source (one that was a client) can create a group, but not add clients;
- * - the master volume reads as the members' average; setting it scales every member's volume to
- *   reach that average.
+ * - a client choosing a source leads the group from then on, playing that source, and the old
+ *   server becomes a client (the client numbers close up, the old server comes last);
+ * - standby on any member, or waking any member, applies to the whole group;
+ * - the master volume reads as the members' average; setting it moves every member's volume by
+ *   the same number of steps.
  *
- * Not seen on real radios: choosing a source on a client takes it out of its group, and a server
- * choosing a source that can't be shared (`streamable` 0) ends the group, as UNDOK's warnings say.
+ * Not seen on real radios (all their sources can be shared): a server choosing a source that
+ * can't be shared (`streamable` 0) ends the group, as UNDOK's warnings suggest.
  */
 export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): MultiroomNetwork {
   const listsItself = options.listsItself ?? false;
@@ -238,13 +241,41 @@ export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): M
     follow(group);
   };
 
-  /** Scales every member's volume so that their average becomes `target`. */
-  const scaleVolumes = (group: Group, target: number) => {
+  /** Moves every member's volume by the same steps, so that their average becomes `target`. */
+  const shiftVolumes = (group: Group, target: number) => {
     const all = [group.server, ...group.clients];
-    const average = all.reduce((sum, m) => sum + volume(m), 0) / all.length;
+    const average = Math.round(all.reduce((sum, m) => sum + volume(m), 0) / all.length);
     for (const member of all) {
-      const scaled = average === 0 ? target : Math.round((volume(member) * target) / average);
-      write(member, "netRemote.sys.audio.volume", Math.min(maxVolume(member), Math.max(0, scaled)));
+      const shifted = volume(member) + target - average;
+      write(
+        member,
+        "netRemote.sys.audio.volume",
+        Math.min(maxVolume(member), Math.max(0, shifted)),
+      );
+    }
+  };
+
+  /** A client chose a source: it leads the group now, and the old server becomes a client. */
+  const takeOver = (group: Group, member: Member) => {
+    const old = group.server;
+    group.server = member;
+    group.clients = [...group.clients.filter((c) => c !== member), old];
+    group.clients.forEach((client, n) => {
+      client.clientNumber = n;
+    });
+    member.clientNumber = undefined;
+    write(old, "netRemote.sys.mode", NO_MODE);
+    for (const path of ["name", "text", "artist", "album", "graphicUri"]) {
+      write(old, `netRemote.play.info.${path}`, "");
+    }
+    follow(group);
+  };
+
+  /** Standby, or waking up, on any member applies to the whole group. */
+  const powerGroup = (group: Group, on: boolean) => {
+    for (const member of [group.server, ...group.clients]) {
+      write(member, "netRemote.sys.power", on ? 1 : 0);
+      write(member, "netRemote.play.status", on ? PLAY_PLAYING : PLAY_IDLE);
     }
   };
 
@@ -269,8 +300,6 @@ export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): M
       case "netRemote.multiroom.group.addClient": {
         const client = find(String(value));
         if (!serving || !client || client === member) return "FS_FAIL";
-        // An SMRS30A1 leading a group with nothing to play refused a client.
-        if (currentMode(member) === NO_MODE) return "FS_FAIL";
         const protocol = (m: Member) => m.state.get("netRemote.multiroom.caps.protocolVersion");
         if (protocol(client) !== protocol(member)) return "FS_FAIL";
         if (client.group === serving) return undefined;
@@ -300,14 +329,11 @@ export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): M
         return undefined;
       case "netRemote.multiroom.group.masterVolume":
         if (!serving) return "FS_FAIL";
-        scaleVolumes(serving, Number(value));
+        shiftVolumes(serving, Number(value));
         return undefined;
       case "netRemote.sys.mode":
         if (group && !serving) {
-          // Back from NO_MODE to the source just chosen, outside the group.
-          group.clients = group.clients.filter((c) => c !== member);
-          member.group = undefined;
-          member.clientNumber = undefined;
+          takeOver(group, member);
         } else if (serving && !streamable(member)) {
           dissolve(serving);
         } else if (serving) {
@@ -347,6 +373,10 @@ export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): M
       publish();
       return {
         apply(path, value) {
+          if (path === "netRemote.sys.power" && member.group) {
+            powerGroup(member.group, value === 1);
+            return undefined;
+          }
           if (!path.startsWith("netRemote.multiroom.") && path !== "netRemote.sys.mode") {
             if (LISTED.has(path)) publish();
             return undefined;
@@ -358,6 +388,10 @@ export function createMultiroomNetwork(options: MultiroomNetworkOptions = {}): M
         changed(path) {
           if (syncing > 0) return;
           const group = member.group;
+          // The sleep timer putting a member in standby takes the group with it.
+          if (path === "netRemote.sys.power" && group) {
+            powerGroup(group, Number(member.state.get(path)) === 1);
+          }
           if (group?.server === member && path === "netRemote.play.status") follow(group);
           if (LISTED.has(path) || path === "netRemote.sys.mode") publish();
         },

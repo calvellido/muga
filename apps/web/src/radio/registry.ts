@@ -280,17 +280,21 @@ export class RadioRegistry {
       this.selectGroup(group.id);
   }
 
-  /** A radio came online or reported its UDN: the multiroom list may now include it. */
+  /**
+   * A radio came online, reported its UDN, or changed source or power. The multiroom state may
+   * have changed with it: in a group, a client choosing a source leads the group, and standby on
+   * any speaker takes the whole group with it (ADR 0008).
+   */
   private radioChanged(id: string, controller: RadioController): void {
-    const { connection, udn } = controller.getSnapshot();
-    const key = `${connection}|${udn}`;
+    const { connection, udn, modeKey, power } = controller.getSnapshot();
+    const key = `${connection}|${udn}|${modeKey}|${power}`;
     if (this.seen.get(id) === key) return;
     this.seen.set(id, key);
     this.multiroom.radiosChanged();
     if (connection !== "online") return;
-    // A speaker the list doesn't have yet (just connected, or back online): read it again now.
+    // A speaker the lists don't have yet (just connected, or back online): read them too.
     const listed = this.multiroom.getSnapshot().status === "ready" && this.multiroom.speaker(id);
-    if (!listed) void this.multiroom.refresh(true);
+    void this.multiroom.refresh(!listed);
   }
 
   private dropController(id: string): void {

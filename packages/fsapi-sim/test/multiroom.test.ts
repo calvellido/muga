@@ -122,13 +122,14 @@ describe("simulated multiroom", () => {
 
     await living.client.set("netRemote.multiroom.client.volume0", 4);
     await expect(kitchen.client.get("netRemote.sys.audio.volume")).resolves.toBe(4);
+    // Average 9; a master of 6 takes 3 steps off every member.
     await living.client.set("netRemote.multiroom.group.masterVolume", 6);
-    await expect(living.client.get("netRemote.sys.audio.volume")).resolves.toBe(9);
-    await expect(kitchen.client.get("netRemote.sys.audio.volume")).resolves.toBe(3);
+    await expect(living.client.get("netRemote.sys.audio.volume")).resolves.toBe(11);
+    await expect(kitchen.client.get("netRemote.sys.audio.volume")).resolves.toBe(1);
 
     await kitchen.client.set("netRemote.sys.audio.volume", 9);
     await expect(living.client.get("netRemote.multiroom.client.volume0")).resolves.toBe(9);
-    await expect(living.client.get("netRemote.multiroom.group.masterVolume")).resolves.toBe(9);
+    await expect(living.client.get("netRemote.multiroom.group.masterVolume")).resolves.toBe(10);
     await living.client.set("netRemote.multiroom.client.mute0", "MUTE");
     await expect(kitchen.client.get("netRemote.sys.audio.mute")).resolves.toBe("MUTE");
     await expect(living.client.set("netRemote.multiroom.client.volume3", 5)).rejects.toMatchObject({
@@ -157,24 +158,44 @@ describe("simulated multiroom", () => {
     await expect(readGroupState(living.client)).resolves.toMatchObject({ role: "SERVER" });
   });
 
-  it("lets a speaker with no source lead a group, but not take clients", async () => {
+  it("puts the whole group in standby from any member, and wakes it the same way", async () => {
     const { living, kitchen, bedroom } = await grouped();
-    await destroyGroup(living.client, NO_WAITS);
-    // Kitchen was a client: on, with no source.
-    await expect(kitchen.client.get("netRemote.sys.mode")).resolves.toBe(NO_MODE);
-    await createGroup(kitchen.client, "Kitchen", NO_WAITS);
-    await expect(addToGroup(kitchen.client, bedroom.sim.udn, NO_WAITS)).rejects.toMatchObject({
-      fsStatus: "FS_FAIL",
-    });
+    await bedroom.client.set("netRemote.sys.power", "OFF");
+    for (const speaker of [living, kitchen, bedroom]) {
+      await expect(speaker.client.get("netRemote.sys.power")).resolves.toBe("OFF");
+    }
+    await expect(readGroupState(kitchen.client)).resolves.toMatchObject({ role: "CLIENT" });
+    await kitchen.client.set("netRemote.sys.power", "ON");
+    for (const speaker of [living, kitchen, bedroom]) {
+      await expect(speaker.client.get("netRemote.sys.power")).resolves.toBe("ON");
+      await expect(speaker.client.get("netRemote.play.status")).resolves.toBe("PLAYING");
+    }
   });
 
-  it("leaves a group when a client picks a source, and ends it when the server can't share", async () => {
+  it("lets a client take the group over by choosing a source", async () => {
     const { living, kitchen, bedroom } = await grouped();
+    const id = (await readGroupState(living.client))?.groupId;
     await kitchen.client.set("netRemote.sys.mode", 1);
-    await expect(readGroupState(kitchen.client)).resolves.toMatchObject({ role: "NO_GROUP" });
+    await expect(readGroupState(kitchen.client)).resolves.toMatchObject({
+      role: "SERVER",
+      groupId: id,
+    });
     await expect(kitchen.client.get("netRemote.play.info.name")).resolves.toBe("Spotify");
-    await expect(living.client.get("netRemote.multiroom.group.attachedClients")).resolves.toBe(1);
+    // The client numbers close up, and the old server comes last.
+    await expect(readGroupState(bedroom.client)).resolves.toMatchObject({
+      role: "CLIENT",
+      clientNumber: 0,
+    });
+    await expect(readGroupState(living.client)).resolves.toMatchObject({
+      role: "CLIENT",
+      clientNumber: 1,
+    });
+    await expect(living.client.get("netRemote.sys.mode")).resolves.toBe(NO_MODE);
+    await expect(kitchen.client.get("netRemote.multiroom.group.attachedClients")).resolves.toBe(2);
+  });
 
+  it("ends the group when its server picks a source that can't be shared", async () => {
+    const { living, bedroom } = await grouped();
     await living.client.set("netRemote.sys.mode", 4); // FM can't be shared in the simulator
     await expect(readGroupState(living.client)).resolves.toMatchObject({ role: "NO_GROUP" });
     await expect(readGroupState(bedroom.client)).resolves.toMatchObject({ role: "NO_GROUP" });

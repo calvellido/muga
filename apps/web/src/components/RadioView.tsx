@@ -4,7 +4,7 @@ import { currentModeId } from "../radio/controller.ts";
 import { useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
 import { Icon } from "./Icon.tsx";
-import { Library } from "./Library.tsx";
+import { Library, TakeOverSources } from "./Library.tsx";
 import { GroupMembership, MultiroomStatus } from "./MultiroomNotices.tsx";
 import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
@@ -99,7 +99,14 @@ export function RadioView({ id }: { id: string }) {
             className={`button button--compact power-button${snapshot.power ? " button--ghost" : ""}`}
             disabled={!canPower}
             aria-pressed={snapshot.power === true}
-            onClick={() => void controller.setPower(!snapshot.power)}
+            onClick={() => {
+              // Speakers in a group go to standby together (ADR 0008).
+              const whole = group && snapshot.power;
+              if (whole && !window.confirm(t("groups.standby.confirm", { group: group.name }))) {
+                return;
+              }
+              void controller.setPower(!snapshot.power);
+            }}
           >
             <Icon name="power" size={20} />
             <span className="button__text">
@@ -136,7 +143,11 @@ export function RadioView({ id }: { id: string }) {
             {!client && <Transport snapshot={snapshot} controller={controller} />}
             <VolumeControl snapshot={snapshot} controller={controller} />
           </div>
-          {!client && <Library snapshot={snapshot} controller={controller} />}
+          {client ? (
+            <TakeOverSources snapshot={snapshot} controller={controller} group={group} />
+          ) : (
+            <Library snapshot={snapshot} controller={controller} />
+          )}
         </div>
       )}
 
