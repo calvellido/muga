@@ -28,6 +28,7 @@ const SAMPLE_VALUES = {
   source: "DAB",
   next: "Kitchen",
   number: 2,
+  done: 120,
 };
 
 describe("messages", () => {

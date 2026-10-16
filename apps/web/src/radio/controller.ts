@@ -26,6 +26,7 @@ import type {
 
 const INFO_NODES = [
   "netRemote.sys.info.friendlyName",
+  "netRemote.sys.info.radioId",
   "netRemote.sys.info.version",
   "netRemote.sys.info.modelName",
   "netRemote.sys.info.dmruuid",
@@ -77,6 +78,8 @@ const BACKGROUND_NODES = [
 ] as const satisfies readonly ScalarPath[];
 
 const DEFAULT_VOLUME_STEPS = 32;
+/** What `sys.info.radioId` looks like (the MAC address); speakers saved by host have none. */
+const RADIO_ID = /^[0-9A-F]{12}$/i;
 const OPTIMISTIC_STATUS: Record<PlayAction, PlayState["status"]> = {
   PLAY: "PLAYING",
   PAUSE: "PAUSED",
@@ -462,7 +465,12 @@ export class RadioController {
 
   private async pollOnce(): Promise<void> {
     try {
-      if (!this.infoLoaded) await this.loadInfo();
+      // Another radio may answer at this address now (the router gave it ours): that's not us.
+      if (!this.infoLoaded && !(await this.loadInfo())) {
+        this.failures++;
+        this.update({ connection: "offline" });
+        return;
+      }
       const onFm = currentModeId(this.snapshot) === "FM";
       const nodes: readonly PollNode[] = this.active
         ? [...FAST_NODES, ...(onFm ? FM_NODES : [])]
@@ -517,6 +525,8 @@ export class RadioController {
       } else if (isFsapiError(error)) {
         this.failures++;
         if (error.kind === "network" || error.kind === "timeout") {
+          // Whatever answers here next has to show it's still this radio.
+          this.infoLoaded = false;
           this.update({ connection: "offline" });
         } else {
           this.fail("poll", error);
@@ -528,8 +538,12 @@ export class RadioController {
     }
   }
 
-  private async loadInfo(): Promise<void> {
+  /** Reads identity, sources and capabilities. False when another radio answers here. */
+  private async loadInfo(): Promise<boolean> {
     const { values } = await this.client.getMultiple(INFO_NODES);
+    const { id } = this.snapshot.config;
+    const radioId = values["netRemote.sys.info.radioId"]?.trim();
+    if (RADIO_ID.test(id) && radioId && radioId.toUpperCase() !== id.toUpperCase()) return false;
     let modes: SourceMode[] = [];
     try {
       const all = await this.client.listAllItems("netRemote.sys.caps.validModes", { pageSize: 30 });
@@ -548,6 +562,7 @@ export class RadioController {
       navCaps: values["netRemote.nav.caps"],
       modes,
     });
+    return true;
   }
 
   private async refreshTrack(): Promise<void> {

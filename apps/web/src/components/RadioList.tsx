@@ -1,14 +1,24 @@
 import { DEFAULT_PIN, isFsapiError } from "@muga/fsapi-core";
 import { useId, useState } from "react";
 import { useT } from "../i18n/index.tsx";
-import { useMultiroom, useRadio, useRegistry, useRegistrySnapshot } from "../radio/hooks.ts";
+import {
+  useFinder,
+  useMultiroom,
+  useRadio,
+  useRegistry,
+  useRegistrySnapshot,
+} from "../radio/hooks.ts";
 import type { MultiroomGroup, MultiroomSpeaker } from "../radio/multiroom.ts";
+import { address } from "../radio/registry.ts";
 import { Icon } from "./Icon.tsx";
 import { statusLine } from "./status.ts";
 
 export function members(group: MultiroomGroup): MultiroomSpeaker[] {
   return [group.server, ...group.clients];
 }
+
+/** A speaker that can be connected: its key, name and address. */
+type Candidate = Pick<MultiroomSpeaker, "udn" | "name" | "ip">;
 
 /** Groups to list: those with at least one saved speaker. */
 function shownGroups(groups: readonly MultiroomGroup[], saved: ReadonlySet<string>) {
@@ -22,7 +32,7 @@ function useConnectFound(onConnected?: () => void) {
   const [connecting, setConnecting] = useState<string>();
   const [error, setError] = useState<{ udn: string; text: string }>();
 
-  async function connect(speaker: MultiroomSpeaker) {
+  async function connect(speaker: Candidate) {
     const name = speaker.name || speaker.ip;
     setConnecting(speaker.udn);
     setError(undefined);
@@ -47,7 +57,7 @@ function ConnectButton({
   speaker,
   found,
 }: {
-  speaker: MultiroomSpeaker;
+  speaker: Candidate;
   found: ReturnType<typeof useConnectFound>;
 }) {
   const t = useT();
@@ -246,20 +256,32 @@ function RadioListItem({
   );
 }
 
-/** Multiroom speakers on the network that aren't connected to Muga yet, one tap away. */
+/**
+ * Speakers on the network that aren't connected to Muga yet, one tap away: the ones the
+ * multiroom lists name, and the ones a scan found (ADR 0011).
+ */
 export function DiscoveredSpeakers({ onConnected }: { onConnected?: () => void }) {
   const t = useT();
   const id = useId();
   const { radios } = useRegistrySnapshot();
   const { speakers, groups } = useMultiroom();
+  const scan = useFinder();
   const found = useConnectFound(onConnected);
   // Members of listed groups are offered in their group instead.
-  const listed = new Set(
-    shownGroups(groups, new Set(radios.map((r) => r.id))).flatMap((g) =>
-      members(g).map((s) => s.udn),
+  const inGroups = shownGroups(groups, new Set(radios.map((r) => r.id))).flatMap(members);
+  const listed = new Set(inGroups.map((s) => s.udn));
+  const fromLists = speakers.filter((s) => !s.radioId && s.ip && !listed.has(s.udn));
+  // The scan's finds, unless they're saved already or named above.
+  const savedIds = new Set(radios.map((r) => r.id.toUpperCase()));
+  const known = new Set(
+    [...radios.map((r) => r.host), ...fromLists.map((s) => s.ip), ...inGroups.map((s) => s.ip)].map(
+      address,
     ),
   );
-  const unconnected = speakers.filter((s) => !s.radioId && s.ip && !listed.has(s.udn));
+  const fromScan: Candidate[] = scan.found
+    .filter((r) => !savedIds.has(r.radioId?.toUpperCase() ?? "") && !known.has(address(r.host)))
+    .map((r) => ({ udn: `scan:${r.host}`, name: r.name, ip: r.host }));
+  const unconnected: Candidate[] = [...fromLists, ...fromScan];
   if (unconnected.length === 0) return null;
 
   return (

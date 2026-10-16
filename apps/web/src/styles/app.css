@@ -1650,3 +1650,47 @@ input {
 .access-hint {
   margin-block-end: 4px;
 }
+
+/* Finding speakers on the network (ADR 0011) */
+.find {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.welcome__find .find {
+  justify-items: center;
+}
+
+.find--scanning {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  inline-size: 100%;
+}
+
+.find__progress {
+  grid-column: 1 / -1;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.find progress {
+  inline-size: 100%;
+  block-size: 6px;
+  accent-color: var(--accent);
+}
+
+.welcome__find {
+  display: grid;
+  gap: 14px;
+  inline-size: 100%;
+}
+
+.sidebar__connect {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar__connect .find > .button {
+  inline-size: 100%;
+}
