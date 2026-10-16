@@ -13,13 +13,19 @@ export function playStatusLabel(status: PlayStatus | undefined, t: T): string {
     : t("playStatus.unknown");
 }
 
+/** The current source's name, as the radio labels it. */
+export function sourceLabel(s: RadioSnapshot): string {
+  const mode = s.modes.find((m) => m.key === s.modeKey);
+  return mode?.label || mode?.id || "";
+}
+
 /** One-line summary for the speaker list and header: connection problems first, then what's playing. */
 export function statusLine(s: RadioSnapshot, t: T): { text: string; tone: StatusTone } {
   if (s.connection === "connecting") return { text: t("status.connecting"), tone: "idle" };
   if (s.connection === "offline") return { text: t("status.offline"), tone: "warn" };
   if (s.connection === "pin-required") return { text: t("status.pinRequired"), tone: "warn" };
   if (s.power === false) return { text: t("status.standby"), tone: "idle" };
-  const mode = s.modes.find((m) => m.key === s.modeKey)?.label;
+  const mode = sourceLabel(s);
   const what = s.play.name || playStatusLabel(s.play.status, t);
   return {
     text: mode ? `${mode} · ${what}` : what,
