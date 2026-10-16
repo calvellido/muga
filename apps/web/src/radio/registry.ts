@@ -172,12 +172,16 @@ export class RadioRegistry {
     this.multiroom.stop();
   }
 
-  /** Pause polling while the page is hidden; resume (with an immediate refresh) when it's shown. */
+  /**
+   * While the page is hidden, polling pauses, except for the speaker on screen, read slowly for
+   * the page's title. Shown again, everything resumes with an immediate refresh.
+   */
   setVisible(visible: boolean): void {
     if (visible === this.visible) return;
     this.visible = visible;
+    for (const controller of this.controllers.values()) controller.setHidden(!visible);
     if (visible) this.start();
-    else this.stop();
+    else this.multiroom.stop();
   }
 
   controller(id: string | undefined): RadioController | undefined {
@@ -191,6 +195,7 @@ export class RadioRegistry {
       ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
     });
     this.controllers.set(id, controller);
+    controller.setHidden(!this.visible);
     controller.subscribe(() => this.radioChanged(id, controller));
     return controller;
   }

@@ -33,6 +33,21 @@ export function statusLine(s: RadioSnapshot, t: T): { text: string; tone: Status
   };
 }
 
+/**
+ * The page's title, for tabs and an installed app's window: what the speaker or group on screen
+ * plays, first, since titles are cut at the end. `name` is the speaker's or group's.
+ */
+export function pageTitle(s: RadioSnapshot | undefined, name: string, t: T): string {
+  if (!s || !name) return t("app.name");
+  const on = s.connection === "online" && s.power !== false;
+  const playing = on && isPlaying(s.play.status);
+  const paused = on && s.play.status === "PAUSED";
+  const track = s.play.name || sourceLabel(s);
+  if (!track || !(playing || paused)) return t("title.speaker", { name });
+  const what = s.play.artist ? `${track} · ${s.play.artist}` : track;
+  return t(playing ? "title.playing" : "title.paused", { what, name });
+}
+
 export function formatDuration(ms: number, intl: IntlShape): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(total / 3600);

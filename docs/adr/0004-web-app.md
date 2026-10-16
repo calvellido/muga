@@ -8,7 +8,7 @@ Date: 2026-10-14. Status: accepted.
 2. **Polling, not sessions.** Each radio gets a `RadioController` that polls plain GETs:
    - every 2 s for the selected radio and every 15 s for the others;
    - backing off while a radio is offline;
-   - paused while the page is hidden.
+   - paused while the page is hidden, except for the speaker or group on screen, read every 15 s so the page's title stays current (decision 8).
 
    Track details (artist, artwork, caps, …) are re-read only when the track changes, or every 5th poll. This mirrors UNDOK's notification-driven refresh, without taking the radio's single session.
 3. **Framework-free state.** Controllers and the registry are plain classes exposing `subscribe`/`getSnapshot`, read through `useSyncExternalStore`. They're tested against `@muga/fsapi-sim` without a DOM.
@@ -27,6 +27,10 @@ Date: 2026-10-14. Status: accepted.
    - visible focus rings;
    - reduced-motion support.
 7. **Storage is best-effort.** `localStorage` access is wrapped (private browsing, blocked storage). Radios (host, PIN, name, id) and the selected radio are stored per browser. PINs are stored in plain text there; they also travel in plain text on the LAN (Analysis doc 08, S1).
+8. **The page's title shows what's playing** on the speaker or group on screen, so a tab or an installed app's window shows it at a glance (added 2026-10-16):
+   - "▶ So What · Miles Davis — Kitchen" while playing, the track first because titles are cut at the end;
+   - the source's name when the radio reports no track ("▶ CD — Kitchen");
+   - "⏸" while paused, and "Kitchen — Muga" otherwise.
 
 ## Consequences
 

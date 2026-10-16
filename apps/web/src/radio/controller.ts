@@ -93,7 +93,7 @@ export interface RadioControllerOptions {
   fetch?: FetchLike;
   /** Poll interval for the selected radio. Default 2000 ms. */
   activeIntervalMs?: number;
-  /** Poll interval for the other radios. Default 15000 ms. */
+  /** Poll interval for the other radios, and while the page is hidden. Default 15000 ms. */
   backgroundIntervalMs?: number;
   /** Re-read track details every N active polls even when nothing changed. Default 5. */
   trackRefreshEvery?: number;
@@ -198,6 +198,8 @@ export class RadioController {
   /** Pages showing this radio's playback without selecting it (see `watch`). */
   private watchers = 0;
   private serving = false;
+  /** The page is hidden: only a radio on screen is read, slowly (see `setHidden`). */
+  private hidden = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private currentPoll: Promise<void> | undefined;
   private pollAgain = false;
@@ -322,6 +324,16 @@ export class RadioController {
     this.schedule(0);
   }
 
+  /**
+   * While the page is hidden, a radio on screen is still read at the background rate, so the
+   * page's title can follow what it plays. The others pause. Shown again, it's read right away.
+   */
+  setHidden(hidden: boolean): void {
+    if (this.hidden === hidden) return;
+    this.hidden = hidden;
+    this.schedule(hidden ? undefined : 0);
+  }
+
   /** While this radio serves the group on screen, its group volumes are polled too. */
   setGroupServer(serving: boolean): void {
     if (this.serving === serving) return;
@@ -439,7 +451,9 @@ export class RadioController {
   private schedule(delay?: number): void {
     clearTimeout(this.timer);
     if (!this.running || this.snapshot.connection === "pin-required") return;
-    const base = this.active ? this.opts.activeIntervalMs : this.opts.backgroundIntervalMs;
+    if (this.hidden && !this.active) return;
+    const base =
+      this.active && !this.hidden ? this.opts.activeIntervalMs : this.opts.backgroundIntervalMs;
     const wait =
       delay ??
       (this.snapshot.connection === "offline" ? Math.min(base * 2 ** this.failures, 30_000) : base);
@@ -510,7 +524,7 @@ export class RadioController {
       });
       this.failures = 0;
       // A request of its own: radios may limit the URL length (ADR 0007).
-      if (this.active && this.serving) {
+      if (this.active && this.serving && !this.hidden) {
         this.mixer.observe((await this.client.getMultiple(MIXER_NODES)).values);
       }
 
