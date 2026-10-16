@@ -21,7 +21,7 @@ From `https://muga.calvellido.es/`, only Chrome and Edge reach the radios, throu
 
 - **What Firefox has:** Local Network Access, on by default since Firefox 153. It uses the spec's permission names, `local-network` and `loopback-network`, not Chrome's `local-network-access`.
 - **Why it still fails:** its mixed content check runs first, with no exemption for local addresses, so the permission never applies to an https page. This is [Mozilla bug 2081728](https://bugzilla.mozilla.org/show_bug.cgi?id=2081728), filed for `.local` names and `targetAddressSpace` and still unconfirmed, under the [Local Network Access meta bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1481298).
-- **A workaround not to suggest:** turning mixed content blocking off makes it work, but for every site.
+- **A workaround, with a cost:** with `security.mixed_content.block_active_content` set to `false` in `about:config`, the requests reach the local network permission, and once that's allowed, they go through. On 2026-10-16 the user confirmed that the published app then works in Firefox. But the setting applies to every site: any https page may then load scripts, frames and requests over plain HTTP, which anyone on the network path can read or change. Firefox keeps settings per profile, so a profile used only for Muga keeps the cost to Muga.
 - **Chrome 155**, for comparison, knows all three permission names.
 
 **Safari and WebKit**, from WebKit's bug tracker on 2026-10-16:
@@ -54,9 +54,10 @@ From `https://muga.calvellido.es/`, only Chrome and Edge reach the radios, throu
 1. **Wait for the browsers.** Nothing is built around them. The workaround stays as in ADR 0010: Muga served at home over plain HTTP, which works in Safari, on iPhone and iPad, and in Firefox.
 2. **Muga keeps asking for Chrome's permission name**, `local-network-access`, to tell whether an https page can reach the radios. Firefox knows `local-network` but still blocks the requests. Asking for that name would tell Firefox users to allow a prompt that never comes.
 3. **The README says where Muga works**, in a few lines. The details stay here.
+4. **The README mentions Firefox's setting**, as a trade-off: what to change, that it lowers a protection for every site, and to keep it to a profile for Muga. Muga can't read the setting, so it still counts Firefox as blocked. Its notice still shows there, and the README says it can be ignored.
 
 ## When to look again
 
 - **WebKit:** when Local Network Access is on by default with a prompt, and private addresses are exempt from mixed content. Then test the published site on an iPhone, and update how Muga detects support (Safari may know only `local-network`).
-- **Firefox:** when bug 2081728, or another bug, exempts local addresses. The same update applies.
+- **Firefox:** when bug 2081728, or another bug, exempts local addresses. The same update applies, and the README's note about the setting can go.
 - **Chrome:** if it drops the `local-network-access` name, Muga has to ask for `local-network` and tell Firefox apart some other way.
