@@ -64,10 +64,13 @@ In Safari or Firefox, and on an iPhone or iPad, see [Where it works](#-where-it-
 | Browser | From muga.calvellido.es | Served at home over plain HTTP |
 | --- | --- | --- |
 | Chrome and Edge, on a computer or Android | ✅ Installs as an app | ✅ |
-| Firefox | ❌ Not yet | ✅ |
+| Firefox | ⚠️ With a setting changed, see below | ✅ |
 | Safari, and every browser on iPhone and iPad | ❌ Not yet | ✅ Add it to the home screen |
 
 Radios answer over plain HTTP, and browsers block plain HTTP from secure (https) websites. Chrome and Edge make an exception for devices on your own network, once you allow it. Safari and Firefox are working towards the same. Until then, Muga tells you so, and you can serve it at home instead: see "On a phone at home" below. Details are in [ADR 0012](docs/adr/0012-browsers-without-local-network-access.md).
+
+> [!CAUTION]
+> **Firefox, if you accept the trade-off:** open `about:config`, set `security.mixed_content.block_active_content` to `false`, and allow local network access when Firefox asks. This turns off a protection for every website, not only Muga, so it's best kept to a separate Firefox profile used only for Muga (`about:profiles`). Muga may still say the browser can't reach your radios; you can ignore that.
 
 ## 🚀 Try it
 
