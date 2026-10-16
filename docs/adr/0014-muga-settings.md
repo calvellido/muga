@@ -8,8 +8,9 @@ Muga followed the browser for its language (ADR 0013) and the device for light o
 
 ## Decisions
 
-1. **A "Muga settings" page, opened by a gear next to the logo.**
-   - **Where the gear is:** in the top bar on a phone, and in the sidebar's header on a computer. The desktop welcome screen, which has no sidebar, now keeps the top bar, so the gear is on every screen.
+1. **A "Muga settings" page.**
+   - **With speakers:** a "Muga settings" row with a gear, at the foot of the speaker list (the sidebar on a computer, the drawer on a phone), above the tagline. Its text label keeps it apart from a speaker's settings button. It was first a gear next to the logo, which looked cramped there.
+   - **Before any speaker:** the welcome screen has no speaker list, so a gear sits at the right edge of the top bar. The desktop welcome screen now keeps the top bar too, so the language can be changed before connecting anything.
    - **What it shows:** the page opens in the main area, like a speaker's settings, with a back button.
    - **Leaving it:** picking or connecting a speaker shows that speaker.
    - **Naming:** "Muga settings" in English and "Ajustes de Muga" in Spanish, so they aren't confused with a speaker's settings.

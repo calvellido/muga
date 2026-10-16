@@ -15,22 +15,12 @@ import {
   useRegistrySnapshot,
 } from "./radio/hooks.ts";
 
-/** The logo, with the button for Muga's own settings next to it. */
-function Brand({ onSettings, settingsOpen }: { onSettings(): void; settingsOpen: boolean }) {
+function Brand() {
   const t = useT();
   return (
     <div className="brand">
       <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={32} height={32} />
       <span>{t("app.name")}</span>
-      <button
-        type="button"
-        className="icon-button brand__settings"
-        aria-label={t("appSettings.open")}
-        aria-pressed={settingsOpen}
-        onClick={onSettings}
-      >
-        <Icon name="gear" size={20} />
-      </button>
     </div>
   );
 }
@@ -109,16 +99,27 @@ export function App() {
     closeDrawer();
     setSettingsOpen(false);
   };
-  const openSettings = () => {
+  // Muga's own settings: at the foot of the speaker list, or in the top bar before there is one.
+  const toggleSettings = () => {
     closeDrawer();
-    setSettingsOpen(true);
+    setSettingsOpen((open) => !open);
   };
-  const brand = <Brand onSettings={openSettings} settingsOpen={settingsOpen} />;
 
   return (
     <div className="app">
       <header className="topbar">
-        {brand}
+        <Brand />
+        {radios.length === 0 && (
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t("appSettings.open")}
+            aria-pressed={settingsOpen}
+            onClick={toggleSettings}
+          >
+            <Icon name="gear" />
+          </button>
+        )}
         {radios.length > 0 && (
           <button
             ref={switcherRef}
@@ -145,7 +146,7 @@ export function App() {
           inert={!wide && !drawerOpen}
         >
           <div className="sidebar__header">
-            {brand}
+            <Brand />
             <button
               ref={closeRef}
               type="button"
@@ -174,7 +175,18 @@ export function App() {
               </button>
             )}
           </div>
-          <p className="sidebar__footer">{t("app.tagline")}</p>
+          <div className="sidebar__footer">
+            <button
+              type="button"
+              className="sidebar__settings"
+              aria-pressed={settingsOpen}
+              onClick={toggleSettings}
+            >
+              <Icon name="gear" size={20} />
+              {t("appSettings.open")}
+            </button>
+            <p className="sidebar__tagline">{t("app.tagline")}</p>
+          </div>
         </aside>
       )}
       {drawerOpen && (

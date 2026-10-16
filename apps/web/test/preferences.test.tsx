@@ -88,4 +88,32 @@ describe("Muga settings", () => {
     await user.click(screen.getByRole("button", { name: "Volver" }));
     expect(screen.getByRole("heading", { name: "Aún no hay altavoces" })).toBeTruthy();
   });
+
+  it("opens from the foot of the speaker list once there are speakers", async () => {
+    const storage = memory({
+      "muga.radios.v1": JSON.stringify([
+        { id: "002261000001", host: "127.0.0.1:1", pin: "1234", name: "Kitchen" },
+      ]),
+    });
+    const registry = new RadioRegistry({ storage });
+    const user = userEvent.setup();
+    render(
+      <PreferencesProvider storage={storage} initial={await loadPreferences(storage)}>
+        <RegistryContext.Provider value={registry}>
+          <App />
+        </RegistryContext.Provider>
+      </PreferencesProvider>,
+    );
+    const sidebar = screen.getByRole("complementary", { name: "Speakers" });
+    const entry = within(sidebar).getByRole("button", { name: "Muga settings" });
+    const topbar = document.querySelector<HTMLElement>(".topbar");
+    if (!topbar) throw new Error("no top bar");
+    expect(within(topbar).queryByRole("button", { name: "Muga settings" })).toBeNull();
+    await user.click(entry);
+    expect(screen.getByRole("heading", { name: "Muga settings" })).toBeTruthy();
+    expect(entry.getAttribute("aria-pressed")).toBe("true");
+    await user.click(entry);
+    expect(screen.queryByRole("heading", { name: "Muga settings" })).toBeNull();
+    registry.stop();
+  });
 });

@@ -127,13 +127,6 @@ input {
   border-radius: 9px;
 }
 
-.brand__settings {
-  inline-size: 40px;
-  block-size: 40px;
-  margin-inline-start: -4px;
-  color: var(--text-muted);
-}
-
 .switcher {
   display: inline-flex;
   align-items: center;
@@ -202,6 +195,37 @@ input {
 
 .sidebar__footer {
   margin-block-start: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar__settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sidebar__settings:hover {
+  background: var(--surface-2);
+}
+
+.sidebar__settings[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.sidebar__tagline {
+  margin: 0;
   padding-inline: 12px;
   font-size: 0.8rem;
   color: var(--text-muted);
