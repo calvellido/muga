@@ -109,7 +109,7 @@ export interface DeviceInfo {
   serial: string;
   /** How the radio is connected, when it says. */
   network: "wifi" | "ethernet" | undefined;
-  /** Wi-Fi network name (`sys.net.wlan.connectedSSID`, a byte array UNDOK shows as "ERROR"). */
+  /** Wi-Fi network name (`sys.net.wlan.connectedSSID`, a byte array). */
   ssid: string;
   /** `sys.net.wlan.rssi` as the radio reports it; UNDOK draws it as a bar. */
   signal: number | undefined;
