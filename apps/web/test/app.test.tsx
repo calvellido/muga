@@ -138,9 +138,13 @@ describe("App", () => {
       expect(sim.list("netRemote.nav.presets").find((p) => p.key === 2)?.name).toBe("Radio Muga"),
     );
 
-    await user.click(
-      await within(panel).findByRole("button", { name: "Delete preset 2, Frontera FM" }),
-    );
+    // Saving keeps every preset button disabled until the radio's list shows the new preset,
+    // which on a slow machine is after the simulator already has it.
+    const remove = await within(panel).findByRole("button", {
+      name: "Delete preset 2, Frontera FM",
+    });
+    await waitFor(() => expect((remove as HTMLButtonElement).disabled).toBe(false));
+    await user.click(remove);
     await waitFor(() =>
       expect(sim.list("netRemote.nav.presets").find((p) => p.key === 1)?.name).toBe(""),
     );

@@ -2,7 +2,12 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Where the app is served from: "/" locally and on https://muga.calvellido.es/, or a path such as
+// "/muga/" on a GitHub Pages site without a domain of its own (the Pages workflow sets it).
+const base = process.env.MUGA_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -13,8 +18,10 @@ export default defineConfig({
         short_name: "Muga",
         description: "Control your internet radios from the browser.",
         lang: "en",
-        start_url: "/",
-        scope: "/",
+        // An installed app opens, and stays, where it was installed from.
+        id: base,
+        start_url: base,
+        scope: base,
         display: "standalone",
         theme_color: "#0e4f3c",
         background_color: "#0c1210",

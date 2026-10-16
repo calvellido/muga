@@ -1,15 +1,23 @@
 import { DEFAULT_PIN, isFsapiError } from "@muga/fsapi-core";
 import { type FormEvent, useId, useState } from "react";
 import { type MessageId, type MessageValues, useT } from "../i18n/index.tsx";
+import { type LocalAccess, localAccess, useLocalAccess } from "../radio/access.ts";
 import { useRegistry } from "../radio/hooks.ts";
+import { AccessNotice } from "./AccessNotice.tsx";
 
-function describeError(error: unknown, host: string): [MessageId, MessageValues] {
+function describeError(
+  error: unknown,
+  host: string,
+  access: LocalAccess,
+): [MessageId, MessageValues] {
   if (!isFsapiError(error)) return ["connect.error.other", { message: String(error) }];
   switch (error.kind) {
     case "pin":
       return ["connect.error.pin", {}];
     case "network":
     case "timeout":
+      // The browser, not the radio, may be what stopped the request.
+      if (access === "blocked" || access === "denied") return ["connect.error.browser", { host }];
       return ["connect.error.unreachable", { host }];
     case "parse":
     case "not-found":
@@ -29,6 +37,7 @@ export function ConnectForm({ onDone, onCancel }: { onDone?: () => void; onCance
   const [pin, setPin] = useState(DEFAULT_PIN);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<[MessageId, MessageValues]>();
+  const access = useLocalAccess();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -41,7 +50,9 @@ export function ConnectForm({ onDone, onCancel }: { onDone?: () => void; onCance
       setHost("");
       onDone?.();
     } catch (caught) {
-      setError(describeError(caught, target));
+      // The browser may have just been asked, and refused: check again.
+      const now = access === "ask" ? (await localAccess()).access : access;
+      setError(describeError(caught, target, now));
     } finally {
       setBusy(false);
     }
@@ -52,6 +63,7 @@ export function ConnectForm({ onDone, onCancel }: { onDone?: () => void; onCance
       <h2 id={`${id}-title`} className="connect-form__title">
         {t("connect.title")}
       </h2>
+      <AccessNotice access={access} />
       <div className="field">
         <label htmlFor={`${id}-host`}>{t("connect.host.label")}</label>
         <input
