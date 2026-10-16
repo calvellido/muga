@@ -32,6 +32,16 @@ export {
   type ScalarValue,
 } from "./codec.ts";
 export {
+  COMMON_SUBNETS,
+  type FoundRadio,
+  type ProbeOptions,
+  probeRadio,
+  type ScanOptions,
+  scanForRadios,
+  subnetHosts,
+  subnetOf,
+} from "./discovery.ts";
+export {
   FsapiError,
   type FsapiErrorDetails,
   type FsapiErrorKind,

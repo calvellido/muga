@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { RadioController } from "./controller.ts";
+import type { FinderSnapshot } from "./finder.ts";
 import type { MultiroomSnapshot } from "./multiroom.ts";
 import type { RadioRegistry, RegistrySnapshot } from "./registry.ts";
 import type { RadioSnapshot } from "./types.ts";
@@ -28,6 +29,12 @@ export function useRegistrySnapshot(): RegistrySnapshot {
 export function useMultiroom(): MultiroomSnapshot {
   const { multiroom } = useRegistry();
   return useSyncExternalStore(multiroom.subscribe, multiroom.getSnapshot, multiroom.getSnapshot);
+}
+
+/** The network scan: its progress and the radios it found. */
+export function useFinder(): FinderSnapshot {
+  const { finder } = useRegistry();
+  return useSyncExternalStore(finder.subscribe, finder.getSnapshot, finder.getSnapshot);
 }
 
 const noSubscription = () => () => undefined;

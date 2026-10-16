@@ -1,5 +1,6 @@
 import { DEFAULT_PIN, type FetchLike, FsapiClient } from "@muga/fsapi-core";
 import { RadioController, type RadioControllerOptions } from "./controller.ts";
+import { type FinderOptions, SpeakerFinder } from "./finder.ts";
 import {
   MultiroomDirectory,
   type MultiroomDirectoryOptions,
@@ -24,6 +25,43 @@ export interface RadioRegistryOptions {
   fetch?: FetchLike;
   controller?: Omit<RadioControllerOptions, "fetch">;
   multiroom?: MultiroomDirectoryOptions;
+  finder?: Omit<FinderOptions, "fetch">;
+  /** How often an unreachable speaker is looked for again on its own. Default 60 s. */
+  relocateEveryMs?: number;
+}
+
+/** What `sys.info.radioId` looks like: the radio's MAC address. Speakers saved by host have none. */
+const RADIO_ID = /^[0-9A-F]{12}$/i;
+
+/** `host[:port]` without scheme, path or the default port, to compare addresses. */
+export function address(host: string): string {
+  return host
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:80$/, "");
+}
+
+/** The first result that isn't undefined, or undefined once all are in. */
+function firstFound(searches: Promise<string | undefined>[]): Promise<string | undefined> {
+  if (searches.length === 0) return Promise.resolve(undefined);
+  return new Promise((resolve) => {
+    let left = searches.length;
+    const settle = (value: string | undefined) => {
+      if (value) resolve(value);
+      else if (--left === 0) resolve(undefined);
+    };
+    for (const search of searches) search.then(settle, () => settle(undefined));
+  });
+}
+
+/** The `.local` name a radio advertises: its name, spaces as hyphens (seen on three models). */
+export function localName(name: string): string | undefined {
+  const trimmed = name.trim();
+  return /^[A-Za-z0-9][A-Za-z0-9 -]*$/.test(trimmed)
+    ? `${trimmed.replace(/\s+/g, "-")}.local`
+    : undefined;
 }
 
 const RADIOS_KEY = "muga.radios.v1";
@@ -65,6 +103,8 @@ function loadRadios(storage: StorageLike): RadioConfig[] {
 /** Saved radios, the selected one (or group), one controller per radio, and multiroom groups. */
 export class RadioRegistry {
   readonly multiroom: MultiroomDirectory;
+  /** Finds radios on the network when asked to (ADR 0011). */
+  readonly finder: SpeakerFinder;
   private snapshot: RegistrySnapshot;
   private readonly listeners = new Set<() => void>();
   private readonly controllers = new Map<string, RadioController>();
@@ -74,6 +114,11 @@ export class RadioRegistry {
   private groupSpeakers = new Set<string>();
   /** Per radio, what the multiroom list depends on: whether it answers, and its UDN. */
   private readonly seen = new Map<string, string>();
+  /** Searches for speakers that stopped answering, and when each was last looked for. */
+  private readonly searches = new Map<string, Promise<boolean>>();
+  private readonly searched = new Map<string, number>();
+  /** The address from the multiroom lists last tried for each speaker. */
+  private readonly tried = new Map<string, string>();
 
   constructor(private readonly options: RadioRegistryOptions = {}) {
     this.storage = safeStorage(options.storage);
@@ -98,7 +143,14 @@ export class RadioRegistry {
       },
       options.multiroom,
     );
-    this.multiroom.subscribe(() => this.followGroup());
+    this.multiroom.subscribe(() => {
+      this.followGroup();
+      this.followAddresses();
+    });
+    this.finder = new SpeakerFinder(
+      { radios: () => this.snapshot.radios },
+      { ...options.finder, ...(options.fetch ? { fetch: options.fetch } : {}) },
+    );
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -234,6 +286,26 @@ export class RadioRegistry {
     this.controllers.get(id)?.setPin(pin);
   }
 
+  /**
+   * Finds a saved speaker that stopped answering at its address, for example after the router
+   * gave it another one (ADR 0011). It looks for the same radio id in the other speakers'
+   * multiroom lists and at the speaker's `.local` name, and, with `scan`, on the whole network.
+   * Resolves true when found; its saved address is then updated.
+   */
+  relocate(
+    id: string,
+    { scan = false, hint = false }: { scan?: boolean; hint?: boolean } = {},
+  ): Promise<boolean> {
+    const running = this.searches.get(id);
+    if (running && !scan && !hint) return running;
+    // A scan someone asked for, or a new address to try, doesn't wait for a search under way.
+    const search: Promise<boolean> = this.search(id, scan, hint).finally(() => {
+      if (this.searches.get(id) === search) this.searches.delete(id);
+    });
+    this.searches.set(id, search);
+    return search;
+  }
+
   /** Keeps the saved name in step after the radio was renamed (shown while it's offline). */
   rename(id: string, name: string): void {
     const radios = this.snapshot.radios.map((r) => (r.id === id ? { ...r, name } : r));
@@ -288,13 +360,86 @@ export class RadioRegistry {
   private radioChanged(id: string, controller: RadioController): void {
     const { connection, udn, modeKey, power } = controller.getSnapshot();
     const key = `${connection}|${udn}|${modeKey}|${power}`;
-    if (this.seen.get(id) === key) return;
+    const was = this.seen.get(id);
+    if (was === key) return;
     this.seen.set(id, key);
     this.multiroom.radiosChanged();
+    // It stopped answering: perhaps it has another address now.
+    if (connection === "offline" && !was?.startsWith("offline|")) void this.relocate(id);
     if (connection !== "online") return;
     // A speaker the lists don't have yet (just connected, or back online): read them too.
     const listed = this.multiroom.getSnapshot().status === "ready" && this.multiroom.speaker(id);
     void this.multiroom.refresh(!listed);
+  }
+
+  /** An unreachable speaker that the multiroom lists show at another address: try it there. */
+  private followAddresses(): void {
+    for (const config of this.snapshot.radios) {
+      if (this.controllers.get(config.id)?.getSnapshot().connection !== "offline") continue;
+      const listed = this.multiroom.speaker(config.id)?.ip;
+      if (!listed || address(listed) === address(config.host)) continue;
+      if (this.tried.get(config.id) === address(listed)) continue;
+      this.tried.set(config.id, address(listed));
+      void this.relocate(config.id, { hint: true });
+    }
+  }
+
+  private async search(id: string, scan: boolean, hint: boolean): Promise<boolean> {
+    const config = this.snapshot.radios.find((r) => r.id === id);
+    if (!config || !RADIO_ID.test(config.id)) return false;
+    const now = Date.now();
+    const every = this.options.relocateEveryMs ?? 60_000;
+    if (!scan && !hint && now - (this.searched.get(id) ?? 0) < every) return false;
+    this.searched.set(id, now);
+    const name = this.controllers.get(id)?.getSnapshot().name || config.name;
+    const candidates = [
+      ...this.multiroom
+        .getSnapshot()
+        .speakers.filter((s) => s.radioId === id && s.ip)
+        .map((s) => s.ip),
+      localName(name) ?? "",
+    ].filter((host) => host && address(host) !== address(config.host));
+    // All at once, with the scan when asked for: the first place the radio answers wins.
+    const host = await firstFound([
+      ...[...new Set(candidates)].map(async (h) =>
+        (await this.answersAs(h, config)) ? h : undefined,
+      ),
+      ...(scan ? [this.finder.locate(config.id, config.pin).then((found) => found?.host)] : []),
+    ]);
+    return host ? this.moveTo(id, host) : false;
+  }
+
+  /** Whether the radio answering at `host` is this one. */
+  private async answersAs(host: string, config: RadioConfig): Promise<boolean> {
+    const client = new FsapiClient({
+      host,
+      pin: config.pin,
+      timeoutMs: 3_000,
+      ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+    });
+    try {
+      const radioId = await client.get("netRemote.sys.info.radioId");
+      return radioId.trim().toUpperCase() === config.id.toUpperCase();
+    } catch {
+      return false;
+    }
+  }
+
+  /** Saves a speaker's new address and starts talking to it there. */
+  private moveTo(id: string, host: string): boolean {
+    // Another search may have got there first.
+    const current = this.snapshot.radios.find((r) => r.id === id)?.host;
+    if (current !== undefined && address(current) === address(host)) return true;
+    const active = this.snapshot.activeId === id;
+    const serving = active && this.snapshot.activeGroupId !== undefined;
+    const radios = this.snapshot.radios.map((r) => (r.id === id ? { ...r, host } : r));
+    this.dropController(id);
+    this.commit({ ...this.snapshot, radios });
+    const controller = this.controller(id);
+    if (this.visible) controller?.start(active);
+    if (serving) controller?.setGroupServer(true);
+    this.multiroom.radiosChanged();
+    return true;
   }
 
   private dropController(id: string): void {

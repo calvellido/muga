@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ConnectForm } from "./components/ConnectForm.tsx";
+import { FindSpeakers } from "./components/FindSpeakers.tsx";
 import { GroupView } from "./components/GroupView.tsx";
 import { Icon } from "./components/Icon.tsx";
 import { DiscoveredSpeakers, RadioList } from "./components/RadioList.tsx";
@@ -37,6 +38,10 @@ function Welcome() {
       <div>
         <h1>{t("radios.empty.title")}</h1>
         <p className="muted">{t("radios.empty.body")}</p>
+      </div>
+      <div className="card welcome__find">
+        <FindSpeakers />
+        <DiscoveredSpeakers />
       </div>
       <div className="card">
         <ConnectForm />
@@ -133,6 +138,7 @@ export function App() {
           <RadioList onSelect={closeDrawer} />
           <DiscoveredSpeakers onConnected={closeDrawer} />
           <div className="sidebar__connect">
+            <FindSpeakers quiet />
             {connecting ? (
               <ConnectForm onDone={closeDrawer} onCancel={() => setConnecting(false)} />
             ) : (

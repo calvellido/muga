@@ -15,7 +15,7 @@ import { App } from "../src/App.tsx";
 import { I18nProvider } from "../src/i18n/index.tsx";
 import en from "../src/i18n/messages/en.json";
 import { RegistryContext } from "../src/radio/hooks.ts";
-import { RadioRegistry } from "../src/radio/registry.ts";
+import { RadioRegistry, type StorageLike } from "../src/radio/registry.ts";
 
 let sim: RadioSimulator | undefined;
 let home: SimulatedHome | undefined;
@@ -48,9 +48,12 @@ afterEach(async () => {
   home = undefined;
 });
 
-function renderApp() {
+function renderApp(options: { scanHosts?: string[]; storage?: StorageLike } = {}) {
+  const hosts = options.scanHosts ?? [];
   registry = new RadioRegistry({
     fetch: nodeFetch,
+    storage: options.storage,
+    finder: { timeoutMs: 500, ranges: async () => [{ subnet: "test", hosts }] },
     controller: { activeIntervalMs: 100, navPollMs: 5, dabPollMs: 5 },
     multiroom: {
       intervalMs: 5_000,
@@ -283,6 +286,44 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
     expect(kitchen.get("netRemote.multiroom.group.state")).toBe(0);
     expect(living.get("netRemote.multiroom.group.state")).toBe(0);
+  });
+
+  it("finds the speakers on the network and connects one", async () => {
+    home = await startSimulatedHome({ speakers: 2 });
+    const [living, kitchen] = home.speakers;
+    const user = userEvent.setup();
+    renderApp({ scanHosts: ["127.0.0.1:1", living?.host ?? "", kitchen?.host ?? ""] });
+
+    await user.click(screen.getByRole("button", { name: "Find speakers" }));
+    expect(await screen.findByText("Found 2 new speakers.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Connect Kitchen" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
+    // Living room is still offered, and Kitchen no longer is.
+    expect(screen.getByRole("button", { name: "Connect Living room" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Connect Kitchen" })).toBeNull();
+  });
+
+  it("looks for a speaker that no longer answers at its address", async () => {
+    home = await startSimulatedHome({ speakers: 1 });
+    const [living] = home.speakers;
+    // Saved on an earlier visit, at an address it no longer has.
+    const data = new Map([
+      [
+        "muga.radios.v1",
+        JSON.stringify([
+          { id: "002261000001", host: "127.0.0.1:1", pin: "1234", name: "Living room" },
+        ]),
+      ],
+    ]);
+    const user = userEvent.setup();
+    renderApp({
+      scanHosts: [living?.host ?? ""],
+      storage: { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v) },
+    });
+    expect(await screen.findByText("Living room isn't reachable")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Look for it" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
+    expect(registry?.getSnapshot().radios[0]?.host).toBe(living?.host);
   });
 
   it("explains why a speaker couldn't be connected", async () => {

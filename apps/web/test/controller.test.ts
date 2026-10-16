@@ -1,3 +1,5 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { type RadioSimulator, type SimulatorOptions, startSimulator } from "@muga/fsapi-sim";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RadioController, type RadioControllerOptions } from "../src/radio/controller.ts";
@@ -172,6 +174,21 @@ describe("RadioController", () => {
     sim = await startSimulator({ port });
     await controller.refreshNow();
     expect(controller.getSnapshot().connection).toBe("online");
+  });
+
+  it("counts a server that isn't a radio as unreachable, so the radio can be looked for", async () => {
+    // A printer, say, that got the radio's old address.
+    const server = createServer((_, res) => res.writeHead(404).end("Not found"));
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    const { port } = server.address() as AddressInfo;
+    controller = new RadioController(
+      { id: "002261000001", host: `127.0.0.1:${port}`, pin: "1234", name: "Sim" },
+      { activeIntervalMs: 60_000, backgroundIntervalMs: 60_000 },
+    );
+    controller.start(true);
+    await controller.refreshNow();
+    expect(controller.getSnapshot().connection).toBe("offline");
+    await new Promise<void>((done) => server.close(() => done()));
   });
 
   it("surfaces failed actions as lastError", async () => {

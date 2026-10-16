@@ -26,17 +26,7 @@ export function Notices({ snapshot, controller, name = snapshot.name }: Props & 
   if (connection === "offline" && (access === "blocked" || access === "denied")) {
     return <AccessNotice access={access} />;
   }
-  if (connection === "offline") {
-    return (
-      <div className="notice notice--warn" role="status">
-        <Icon name="alert" />
-        <div>
-          <p className="notice__title">{t("radio.offline.title", { name })}</p>
-          <p>{t("radio.offline.body")}</p>
-        </div>
-      </div>
-    );
-  }
+  if (connection === "offline") return <OfflineNotice snapshot={snapshot} name={name} />;
   return (
     <>
       {connection === "online" && power === false && (
@@ -50,6 +40,45 @@ export function Notices({ snapshot, controller, name = snapshot.name }: Props & 
       )}
       <ActionError snapshot={snapshot} controller={controller} />
     </>
+  );
+}
+
+/** Not answering: perhaps it has another address now, so it can be looked for (ADR 0011). */
+function OfflineNotice({ snapshot, name }: { snapshot: RadioSnapshot; name: string }) {
+  const t = useT();
+  const registry = useRegistry();
+  const [search, setSearch] = useState<"idle" | "looking" | "notFound">("idle");
+
+  async function look() {
+    setSearch("looking");
+    // When it's found, this radio's page shows it at its new address.
+    const found = await registry.relocate(snapshot.config.id, { scan: true });
+    if (!found) setSearch("notFound");
+  }
+
+  return (
+    <div className="notice notice--warn" role="status">
+      <Icon name="alert" />
+      <div>
+        <p className="notice__title">{t("radio.offline.title", { name })}</p>
+        <p>
+          {search === "looking"
+            ? t("radio.offline.looking", { name })
+            : search === "notFound"
+              ? t("radio.offline.notFound", { name })
+              : t("radio.offline.body")}
+        </p>
+      </div>
+      <button
+        type="button"
+        className="button button--ghost notice__action"
+        disabled={search === "looking"}
+        onClick={() => void look()}
+      >
+        <Icon name="search" size={18} />
+        {t("radio.offline.find")}
+      </button>
+    </div>
   );
 }
 
