@@ -1,5 +1,5 @@
-# Publishes the web app to GitHub Pages (ADR 0010): at https://calvellido.es/muga/, or at the
-# repository's own custom domain once one is set in its Pages settings.
+# Publishes the web app to GitHub Pages, at https://muga.calvellido.es/ (ADR 0010): the custom
+# domain set in the repository's Pages settings.
 name: Pages
 
 on:
@@ -36,7 +36,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Where the site is served from: "/muga" under calvellido.es, "" on a custom domain.
+      # Where the site is served from: "" on its custom domain, "/muga" without one.
       - id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 

@@ -4,7 +4,7 @@ Date: 2026-10-16. Status: accepted.
 
 ## Context
 
-Muga is published at `https://calvellido.es/muga/` (GitHub Pages), to be installed from there on a computer or a phone and then used without the website: everything it does happens on the local network. Radios only speak plain HTTP, and browsers block plain-HTTP requests from HTTPS pages as mixed content (ADR 0001).
+Muga is published at `https://muga.calvellido.es/` (GitHub Pages), to be installed from there on a computer or a phone and then used without the website: everything it does happens on the local network. Radios only speak plain HTTP, and browsers block plain-HTTP requests from HTTPS pages as mixed content (ADR 0001).
 
 Nothing web-only can bridge that. A service worker is bound by the same rules as the page, and the website can't reach anyone's home network. A proxy would have to run at home, which is the hub.
 
@@ -12,7 +12,7 @@ Chrome's [Local Network Access](https://developer.chrome.com/blog/local-network-
 
 ## Checked
 
-On 2026-10-16, a `/muga/` build was served over HTTPS and opened in Chrome 155 (headless), talking to the simulator on this computer's network address. With `--ip-address-space-overrides`, the page counts as public, as on `calvellido.es`.
+On 2026-10-16, a `/muga/` build was served over HTTPS and opened in Chrome 155 (headless), talking to the simulator on this computer's network address. With `--ip-address-space-overrides`, the page counts as public, as on the published site.
 
 - **Before the permission:** requests to the speaker were refused: "Permission was denied for this request to access the local network". Headless Chrome declines the prompt; a user sees a prompt.
 - **With the permission:** requests went through, with a console warning about mixed content, and Muga connected through its own UI. Artwork from the speaker's private address loaded too, without being upgraded to HTTPS.
@@ -21,13 +21,13 @@ On 2026-10-16, a `/muga/` build was served over HTTPS and opened in Chrome 155 (
 
 ## Decisions
 
-1. **The supported way to use Muga is the installed app from `https://calvellido.es/muga/`, in Chrome or Edge, on a computer or Android.** After installing, it needs the website only for updates.
+1. **The supported way to use Muga is the installed app from `https://muga.calvellido.es/`, in Chrome or Edge, on a computer or Android.** After installing, it needs the website only for updates.
 2. **The build takes its path from `MUGA_BASE`.** The default is `/`.
-   - **On Pages:** the workflow takes the path from `actions/configure-pages`. That's `/muga/` under `calvellido.es`, or `/` once the repository has a custom domain of its own (such as `muga.calvellido.es`), so neither needs a change in the repository.
+   - **On Pages:** the workflow takes the path from `actions/configure-pages`. That's `/` on the repository's own domain, `muga.calvellido.es`, or `/muga/` under `calvellido.es` without it, so neither needs a change in the repository.
    - **The manifest:** its `id`, `start_url` and `scope` follow the path, so the installed app stays inside it.
    - **In-app asset URLs** use `import.meta.env.BASE_URL`.
    - **The origin:** an installed app, its saved speakers and its local network permission belong to the origin it was installed from. Moving to another domain later means installing again.
-   - **Isolation:** on `calvellido.es/muga/`, the permission and the storage are shared with the rest of `calvellido.es`. A subdomain keeps them to Muga.
+   - **Isolation:** a subdomain of its own keeps the permission and the storage to Muga. Under `calvellido.es/muga/` they would be shared with the rest of `calvellido.es`.
 3. **Muga says when the browser is the problem.** On a secure page it asks for the `local-network-access` permission's state:
    - unknown to the browser (Safari, Firefox): "can't reach your radios from this page", with what works instead;
    - denied: how to turn it back on;

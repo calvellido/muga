@@ -2,7 +2,8 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-// Where the app is served from: "/" locally, "/muga/" on https://calvellido.es/muga/.
+// Where the app is served from: "/" locally and on https://muga.calvellido.es/, or a path such as
+// "/muga/" on a GitHub Pages site without a domain of its own (the Pages workflow sets it).
 const base = process.env.MUGA_BASE ?? "/";
 
 export default defineConfig({

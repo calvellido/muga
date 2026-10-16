@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://calvellido.es/muga/"><img alt="Open the app: calvellido.es/muga" src="https://img.shields.io/badge/app-calvellido.es%2Fmuga-157552"></a>
+  <a href="https://muga.calvellido.es/"><img alt="Open the app: muga.calvellido.es" src="https://img.shields.io/badge/app-muga.calvellido.es-157552"></a>
   <a href="https://github.com/calvellido/muga/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/calvellido/muga/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-157552"></a>
   <img alt="Installable web app" src="https://img.shields.io/badge/PWA-installable-157552">
@@ -51,7 +51,7 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 
 ## 📲 Use it
 
-1. Open **[calvellido.es/muga](https://calvellido.es/muga/)** in Chrome or Edge, on a computer or an Android phone.
+1. Open **[muga.calvellido.es](https://muga.calvellido.es/)** in Chrome or Edge, on a computer or an Android phone.
 2. Install it from the address bar or the browser menu.
 3. Connect your first radio by its IP address and PIN, and allow local network access when the browser asks.
 
@@ -146,18 +146,13 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 | Silvercrest SMRS35A1 | V2.11.11 | Internet radio, Spotify, AUX in |
 | Silvercrest SMRS30A1 | V2.11.11 | Internet radio, Spotify, AUX in |
 
-What these radios showed:
-- **Multiroom:** all four group together (multiroom protocol 4). In a group, a speaker that picks a source takes the lead, and standby on any speaker takes the whole group with it ([ADR 0008](docs/adr/0008-multiroom-groups.md)).
-- **Stereo pairs and Bluetooth settings:** none of them supports these. They have no `multichannel.*` or `bluetooth.*` nodes, and no "wsa" feature in their UPnP description. So Muga doesn't offer them yet.
-- **Request length:** they refuse requests longer than about 385 characters, so Muga splits long ones ([ADR 0003](docs/adr/0003-protocol-conventions.md)).
-
 ## 🗺️ Roadmap
 
 - ✅ Protocol core, simulator and command-line tool
 - ✅ Web app: now playing, controls, volume, sources and presets
 - ✅ Menu browsing, preset editing, FM tuner, DAB scan and settings
 - ✅ Multiroom groups
-- ✅ Published at [calvellido.es/muga](https://calvellido.es/muga/), installable in Chrome and Edge
+- ✅ Published at [muga.calvellido.es](https://muga.calvellido.es/), installable in Chrome and Edge
 - 🔜 Firmware updates and a carefully guarded factory reset
 - ⏸️ Stereo pairs and Bluetooth settings, for radios that support them (none of the tested ones does)
 - 💭 A small hub on your network, for discovery, live updates, and the iPhone over HTTPS
