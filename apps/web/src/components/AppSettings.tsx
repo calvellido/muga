@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { LANGUAGE_NAMES, SUPPORTED_LOCALES, useT } from "../i18n/index.tsx";
 import { type Preferences, usePreferences } from "../preferences.tsx";
+import { APP_VERSION } from "../version.ts";
 import { Icon } from "./Icon.tsx";
 import { ChipGroup } from "./Settings.tsx";
 
@@ -71,6 +72,7 @@ export function AppSettings({ onClose }: { onClose(): void }) {
         </div>
       </div>
       <p className="muted app-settings__note">{t("appSettings.note")}</p>
+      <p className="hint">{t("appSettings.version", { version: APP_VERSION })}</p>
     </section>
   );
 }

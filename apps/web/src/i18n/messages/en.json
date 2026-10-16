@@ -13,6 +13,7 @@
   "appSettings.theme.dark": "Dark",
   "appSettings.theme.hint": "Automatic follows this device's setting.",
   "appSettings.note": "These settings are kept in this browser. A speaker's own settings are on its page.",
+  "appSettings.version": "Muga {version}",
   "title.nowPlaying": "{mark} {what} | Muga",
   "radios.title": "Speakers",
   "radios.connect": "Connect a speaker",

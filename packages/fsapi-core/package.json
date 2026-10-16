@@ -1,6 +1,6 @@
 {
   "name": "@muga/fsapi-core",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Typed FSAPI (netRemote) client for Frontier Silicon radios; runs in browsers and Node",
   "license": "MIT",
