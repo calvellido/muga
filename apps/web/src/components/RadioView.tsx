@@ -33,7 +33,7 @@ export function RadioView({ id }: { id: string }) {
   const serverController = server?.controller;
   useEffect(() => serverController?.watch(), [serverController]);
   const shown = client && server ? server.snapshot : radio?.snapshot;
-  const title = pageTitle(shown, radio?.snapshot.name ?? "", t, radio?.snapshot.muted);
+  const title = pageTitle(shown, t, radio?.snapshot.muted);
   useDocumentTitle(title, t("app.name"));
   if (!radio || !shown) return null;
   const { snapshot, controller } = radio;

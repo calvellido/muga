@@ -28,8 +28,8 @@ Date: 2026-10-14. Status: accepted.
    - reduced-motion support.
 7. **Storage is best-effort.** `localStorage` access is wrapped (private browsing, blocked storage). Radios (host, PIN, name, id) and the selected radio are stored per browser. PINs are stored in plain text there; they also travel in plain text on the LAN (Analysis doc 08, S1).
 8. **The page's title shows what's playing** on the speaker or group on screen, so a tab or an installed app's window shows it at a glance (added 2026-10-16):
-   - "▶ So What - Miles Davis | Kitchen | Muga": the track first, because titles are cut at the end, and the app's name last;
-   - the source's name when the radio reports no track ("▶ CD | Kitchen | Muga");
+   - "▶ So What - Miles Davis | Muga": the track first, because titles are cut at the end, and the app's name last. The speaker's name was left out (2026-10-16): it added length, not value;
+   - the source's name when the radio reports no track ("▶ CD | Muga");
    - a mark instead of words, to keep it short: ▶ playing, ⏸ paused, ⏳ buffering, 🔇 playing muted;
    - just "Muga" when nothing plays (stopped, standby, unreachable, no speaker). A hidden page then reads nothing at all.
 

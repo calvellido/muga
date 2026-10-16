@@ -94,12 +94,12 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Muga Simulator" })).toBeTruthy();
     expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
 
-    await waitFor(() => expect(document.title).toBe("▶ Radio Muga | Muga Simulator | Muga"));
+    await waitFor(() => expect(document.title).toBe("▶ Radio Muga | Muga"));
 
     await user.click(await screen.findByRole("button", { name: "Pause" }));
     await waitFor(() => expect(sim?.get("netRemote.play.status")).toBe(3));
     expect(await screen.findByRole("button", { name: "Play" })).toBeTruthy();
-    await waitFor(() => expect(document.title).toBe("⏸ Radio Muga | Muga Simulator | Muga"));
+    await waitFor(() => expect(document.title).toBe("⏸ Radio Muga | Muga"));
 
     await user.click(screen.getByRole("tab", { name: "Presets" }));
     const panel = screen.getByRole("tabpanel");
