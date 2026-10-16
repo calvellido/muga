@@ -42,14 +42,14 @@ function titleMark(status: PlayStatus | undefined, muted: boolean): string {
 
 /**
  * The page's title, for tabs and an installed app's window: what the speaker or group on screen
- * plays, first, since titles are cut at the end. `name` is the speaker's or group's, and `muted`
- * whether that speaker is muted. Just the app's name when nothing plays.
+ * plays, first, since titles are cut at the end. `muted` is whether the speaker on screen is
+ * muted. Just the app's name when nothing plays.
  */
-export function pageTitle(s: RadioSnapshot | undefined, name: string, t: T, muted = false): string {
+export function pageTitle(s: RadioSnapshot | undefined, t: T, muted = false): string {
   const track = s && (s.play.name || sourceLabel(s));
-  if (!s || !name || !track || !hasPlayback(s)) return t("app.name");
+  if (!s || !track || !hasPlayback(s)) return t("app.name");
   const what = s.play.artist ? `${track} - ${s.play.artist}` : track;
-  return t("title.nowPlaying", { mark: titleMark(s.play.status, muted), what, name });
+  return t("title.nowPlaying", { mark: titleMark(s.play.status, muted), what });
 }
 
 export function formatDuration(ms: number, intl: IntlShape): string {

@@ -28,24 +28,24 @@ function speaker(play: Partial<PlayState>, patch: Partial<RadioSnapshot> = {}): 
 }
 
 const title = (play: Partial<PlayState>, patch: Partial<RadioSnapshot> = {}, muted = false) =>
-  pageTitle(speaker(play, patch), "Kitchen", t, muted);
+  pageTitle(speaker(play, patch), t, muted);
 
 describe("pageTitle", () => {
   it("puts what's playing first, with the artist when there is one", () => {
-    expect(title({ name: "Jazz Lounge 7" })).toBe("▶ Jazz Lounge 7 | Kitchen | Muga");
+    expect(title({ name: "Jazz Lounge 7" })).toBe("▶ Jazz Lounge 7 | Muga");
     expect(title({ name: "So What", artist: "Miles Davis" })).toBe(
-      "▶ So What - Miles Davis | Kitchen | Muga",
+      "▶ So What - Miles Davis | Muga",
     );
   });
 
   it("names the source when it reports nothing", () => {
-    expect(title({})).toBe("▶ CD | Kitchen | Muga");
+    expect(title({})).toBe("▶ CD | Muga");
   });
 
   it("marks a pause, buffering and a muted speaker", () => {
-    expect(title({ status: "PAUSED" })).toBe("⏸ CD | Kitchen | Muga");
-    expect(title({ status: "BUFFERING" })).toBe("⏳ CD | Kitchen | Muga");
-    expect(title({}, {}, true)).toBe("🔇 CD | Kitchen | Muga");
+    expect(title({ status: "PAUSED" })).toBe("⏸ CD | Muga");
+    expect(title({ status: "BUFFERING" })).toBe("⏳ CD | Muga");
+    expect(title({}, {}, true)).toBe("🔇 CD | Muga");
   });
 
   it("is just the app's name when nothing plays", () => {
@@ -53,6 +53,6 @@ describe("pageTitle", () => {
     expect(title({}, { power: false })).toBe("Muga");
     expect(title({}, { connection: "offline" })).toBe("Muga");
     expect(title({}, { modeKey: undefined })).toBe("Muga");
-    expect(pageTitle(undefined, "", t)).toBe("Muga");
+    expect(pageTitle(undefined, t)).toBe("Muga");
   });
 });

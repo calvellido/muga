@@ -27,7 +27,7 @@ export function GroupView({ groupId }: { groupId: string }) {
   const server = useRadio(group?.server.radioId);
   const [editing, setEditing] = useState(false);
   const editButton = useRef<HTMLButtonElement>(null);
-  useDocumentTitle(pageTitle(server?.snapshot, group?.name ?? "", t), t("app.name"));
+  useDocumentTitle(pageTitle(server?.snapshot, t), t("app.name"));
   if (!group || !server) return null;
   const { snapshot, controller } = server;
   const { text, tone } = statusLine(snapshot, t);
