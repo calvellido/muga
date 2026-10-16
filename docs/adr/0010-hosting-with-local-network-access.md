@@ -22,7 +22,12 @@ On 2026-10-16, a `/muga/` build was served over HTTPS and opened in Chrome 155 (
 ## Decisions
 
 1. **The supported way to use Muga is the installed app from `https://calvellido.es/muga/`, in Chrome or Edge, on a computer or Android.** After installing, it needs the website only for updates.
-2. **The build takes its path from `MUGA_BASE`.** The default is `/`; Pages builds use `/muga/`. The manifest's `id`, `start_url` and `scope` follow it, so the installed app stays inside `/muga/`. In-app asset URLs use `import.meta.env.BASE_URL`.
+2. **The build takes its path from `MUGA_BASE`.** The default is `/`.
+   - **On Pages:** the workflow takes the path from `actions/configure-pages`. That's `/muga/` under `calvellido.es`, or `/` once the repository has a custom domain of its own (such as `muga.calvellido.es`), so neither needs a change in the repository.
+   - **The manifest:** its `id`, `start_url` and `scope` follow the path, so the installed app stays inside it.
+   - **In-app asset URLs** use `import.meta.env.BASE_URL`.
+   - **The origin:** an installed app, its saved speakers and its local network permission belong to the origin it was installed from. Moving to another domain later means installing again.
+   - **Isolation:** on `calvellido.es/muga/`, the permission and the storage are shared with the rest of `calvellido.es`. A subdomain keeps them to Muga.
 3. **Muga says when the browser is the problem.** On a secure page it asks for the `local-network-access` permission's state:
    - unknown to the browser (Safari, Firefox): "can't reach your radios from this page", with what works instead;
    - denied: how to turn it back on;

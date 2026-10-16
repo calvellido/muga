@@ -135,15 +135,31 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 
 Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
 
+## 📻 Tested radios
+
+Muga has been checked on these radios. Others with the same Frontier Silicon platform should work, with features shown only where a radio reports them.
+
+| Radio | Firmware | Notes |
+| --- | --- | --- |
+| Eliteline ICD2018 | V2.13.21c | FM and DAB (FM can be shared with a group), Bluetooth as a source, clock and menu-language settings |
+| Ruark MRx | V2.14.35 | TIDAL, Deezer and Amazon Music sources, Bluetooth as a source, equalizer with loudness, streaming quality |
+| Silvercrest SMRS35A1 | V2.11.11 | Internet radio, Spotify, AUX in |
+| Silvercrest SMRS30A1 | V2.11.11 | Internet radio, Spotify, AUX in |
+
+What these radios showed:
+- **Multiroom:** all four group together (multiroom protocol 4). In a group, a speaker that picks a source takes the lead, and standby on any speaker takes the whole group with it ([ADR 0008](docs/adr/0008-multiroom-groups.md)).
+- **Stereo pairs and Bluetooth settings:** none of them supports these. They have no `multichannel.*` or `bluetooth.*` nodes, and no "wsa" feature in their UPnP description. So Muga doesn't offer them yet.
+- **Request length:** they refuse requests longer than about 385 characters, so Muga splits long ones ([ADR 0003](docs/adr/0003-protocol-conventions.md)).
+
 ## 🗺️ Roadmap
 
 - ✅ Protocol core, simulator and command-line tool
 - ✅ Web app: now playing, controls, volume, sources and presets
 - ✅ Menu browsing, preset editing, FM tuner, DAB scan and settings
 - ✅ Multiroom groups
-- 🔜 Stereo pairs
-- 🔜 Firmware updates, Bluetooth settings and a carefully guarded factory reset
 - ✅ Published at [calvellido.es/muga](https://calvellido.es/muga/), installable in Chrome and Edge
+- 🔜 Firmware updates and a carefully guarded factory reset
+- ⏸️ Stereo pairs and Bluetooth settings, for radios that support them (none of the tested ones does)
 - 💭 A small hub on your network, for discovery, live updates, and the iPhone over HTTPS
 
 ## 🙏 Acknowledgements

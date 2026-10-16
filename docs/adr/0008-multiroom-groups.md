@@ -45,7 +45,7 @@ A multiroom group is one speaker, the **server**, streaming to up to four **clie
    - **Group notice:** a notice says which group it plays with, with "Open group" and "Leave group".
    - **Controls:** transport, menu and presets are hidden there, because the group is controlled through its server. Its sources are shown, to take the group over (decision 4).
 8. **Left for later:**
-   - stereo pairs (`multichannel.*`);
+   - stereo pairs (`multichannel.*`), which none of the four radios tested supports: every `multichannel.*` node answers FS_NODE_DOES_NOT_EXIST, and no `dd.xml` lists the "wsa" feature UNDOK requires;
    - `multiroom.singlegroup.state`, whose meaning is unknown (doc 05 §10);
    - network optimisation (`device.transportOptimisation`), whose effect is unknown;
    - checking `X_audSyncProtocolID` in `dd.xml`, which UNDOK compares and a browser can't fetch without CORS.
