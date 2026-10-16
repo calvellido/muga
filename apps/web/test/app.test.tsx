@@ -53,9 +53,9 @@ function renderApp() {
     fetch: nodeFetch,
     controller: { activeIntervalMs: 100, navPollMs: 5, dabPollMs: 5 },
     multiroom: {
-      intervalMs: 200,
+      intervalMs: 5_000,
       settleMs: 0,
-      waits: { create: 0, add: 0, handOver: 0, destroy: 0 },
+      waits: { create: 0, add: 0, destroy: 0, streamable: 0 },
     },
   });
   render(
@@ -237,12 +237,48 @@ describe("App", () => {
     });
     await waitFor(() => expect(kitchen.get("netRemote.sys.audio.volume")).toBe(3));
 
+    // Kitchen's own page: the radio has no station name as a client; the group's is shown.
+    await user.click(
+      within(screen.getByRole("list", { name: "Speakers in Group 1" })).getByRole("button", {
+        name: /Kitchen/,
+      }),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
+    expect(kitchen.get("netRemote.play.info.name")).toBe("");
+    expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
+    expect(screen.getByText("Kitchen is playing with Group 1.")).toBeTruthy();
+
+    // Choosing a source on a client makes it lead the group, as real radios do.
+    const takeOver = screen.getByRole("region", { name: "Play something else" });
+    await user.click(within(takeOver).getByRole("button", { name: /^Spotify/ }));
+    expect(confirm).toHaveBeenCalledWith(
+      "Kitchen will lead Group 1, and every speaker in it will play Spotify. Continue?",
+    );
+    expect(
+      await screen.findByText("Kitchen leads Group 1: the group plays what it plays."),
+    ).toBeTruthy();
+    expect(kitchen.get("netRemote.multiroom.group.state")).toBe(2);
+    expect(living.get("netRemote.multiroom.group.state")).toBe(1);
+
+    await user.click(screen.getByRole("button", { name: "Open group" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Group 1" })).toBeTruthy();
+    expect(await screen.findByText("Played from Kitchen")).toBeTruthy();
+
+    // Standby is for the whole group.
+    await user.click(screen.getByRole("button", { name: "Standby" }));
+    await waitFor(() => expect(living.get("netRemote.sys.power")).toBe(0));
+    expect(kitchen.get("netRemote.sys.power")).toBe(0);
+    await user.click(await screen.findByRole("button", { name: "Turn on" }));
+    await waitFor(() => expect(living.get("netRemote.sys.power")).toBe(1));
+
     await user.click(screen.getByRole("button", { name: "Ungroup" }));
     expect(confirm).toHaveBeenCalledWith(
       "Ungroup Group 1? Each speaker goes back to playing on its own.",
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Living room" })).toBeTruthy();
+    // Back to the speaker that led the group by then.
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
     expect(kitchen.get("netRemote.multiroom.group.state")).toBe(0);
+    expect(living.get("netRemote.multiroom.group.state")).toBe(0);
   });
 
   it("explains why a speaker couldn't be connected", async () => {

@@ -16,6 +16,35 @@ interface Props {
   group?: MultiroomGroup | undefined;
 }
 
+/**
+ * For a speaker that plays in a group as a client: its sources only. Choosing one makes it lead
+ * the group, which then plays that source (ADR 0008).
+ */
+export function TakeOverSources({
+  snapshot,
+  controller,
+  group,
+}: Props & { group: MultiroomGroup }) {
+  const t = useT();
+  const id = useId();
+  const values = { name: snapshot.name, group: group.name };
+  return (
+    <section className="card tabs-card" aria-labelledby={id}>
+      <h2 id={id} className="card-title">
+        {t("groups.takeOver.title")}
+      </h2>
+      <p className="muted takeover__hint">{t("groups.takeOver.hint", values)}</p>
+      <SourceList
+        snapshot={snapshot}
+        controller={controller}
+        confirm={(mode) =>
+          window.confirm(t("groups.takeOver.confirm", { ...values, source: mode.label || mode.id }))
+        }
+      />
+    </section>
+  );
+}
+
 /** Sources, the source's menu (when it has one) and presets, as ARIA tabs. */
 export function Library({ snapshot, controller, group }: Props) {
   const t = useT();
@@ -72,7 +101,19 @@ export function Library({ snapshot, controller, group }: Props) {
         className="panel"
       >
         {tab === "sources" && (
-          <SourceList snapshot={snapshot} controller={controller} group={group} />
+          <SourceList
+            snapshot={snapshot}
+            controller={controller}
+            group={group}
+            confirm={(mode) =>
+              // A source that can't be shared ends the group (UNDOK warns the same way).
+              !group ||
+              mode.streamable !== 0 ||
+              window.confirm(
+                t("groups.source.confirm", { source: mode.label || mode.id, group: group.name }),
+              )
+            }
+          />
         )}
         {tab === "browse" && <Browse snapshot={snapshot} controller={controller} />}
         {tab === "presets" && <Presets snapshot={snapshot} controller={controller} />}
@@ -81,15 +122,19 @@ export function Library({ snapshot, controller, group }: Props) {
   );
 }
 
-function SourceList({ snapshot, controller, group }: Props) {
+type Mode = RadioSnapshot["modes"][number];
+
+function SourceList({
+  snapshot,
+  controller,
+  group,
+  confirm,
+}: Props & { confirm?: (mode: Mode) => boolean }) {
   const t = useT();
   if (snapshot.modes.length === 0) return <p className="muted">{t("sources.empty")}</p>;
 
-  function choose(mode: RadioSnapshot["modes"][number]) {
-    // A source that can't be shared ends the group (UNDOK warns the same way).
-    const unshared = group && mode.streamable === 0 && mode.key !== snapshot.modeKey;
-    const values = { source: mode.label || mode.id, group: group?.name };
-    if (unshared && !window.confirm(t("groups.source.confirm", values))) return;
+  function choose(mode: Mode) {
+    if (mode.key !== snapshot.modeKey && confirm && !confirm(mode)) return;
     void controller.setMode(mode.key);
   }
 

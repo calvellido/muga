@@ -10,10 +10,13 @@ interface Props {
   controller: RadioController;
 }
 
-/** Connection problems, standby and the last failed action, most important first. */
-export function Notices({ snapshot, controller }: Props) {
+/**
+ * Connection problems, standby and the last failed action, most important first. `name` is what
+ * the notices call the radio (a group's name, when it's shown through its server).
+ */
+export function Notices({ snapshot, controller, name = snapshot.name }: Props & { name?: string }) {
   const t = useT();
-  const { connection, power, name } = snapshot;
+  const { connection, power } = snapshot;
 
   if (connection === "pin-required") return <PinPrompt snapshot={snapshot} />;
   if (connection === "offline") {

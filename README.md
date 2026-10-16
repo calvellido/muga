@@ -35,7 +35,7 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - ⭐ **Presets**: recall them, save what's playing, delete and reorder (where the radio allows it).
 - 📻 **FM tuner**: a dial, one-step buttons, and seek to the next station.
 - 📶 **DAB scan**, with progress. Stations that can no longer be received are removed afterwards.
-- 🏠 **Multiroom groups**: group speakers so they play the same thing in sync, with a group volume and a volume for each speaker. Add and remove speakers, rename, hand over to another speaker, or ungroup.
+- 🏠 **Multiroom groups**: group speakers so they play the same thing in sync, with a group volume and a volume for each speaker. Add and remove speakers, rename, put the whole group in standby, or ungroup.
 - 🔎 **Finds your other speakers**: once one speaker is connected, the others it knows of are one tap away.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
 - ℹ️ **Device info**, including the Wi-Fi network name, which UNDOK shows as "ERROR".

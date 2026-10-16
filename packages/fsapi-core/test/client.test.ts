@@ -107,6 +107,57 @@ describe("FsapiClient", () => {
     expect(calls.map((c) => c.pathname.split("/")[2])).toEqual(["GET", "GET"]);
   });
 
+  it("splits GET_ and SET_MULTIPLE that would be too long for a radio", async () => {
+    // Like an ICD2018: HTTP 400 once the path and query pass about 385 characters.
+    const tooLong = (url: URL) => url.pathname.length + url.search.length > 385;
+    const answer = (url: URL, wrap: string) => {
+      if (tooLong(url)) return { status: 400 };
+      const nodes = url.searchParams.getAll("node");
+      const inner = nodes
+        .map(
+          (n) =>
+            `<fsapiResponse><node>${n}</node><status>FS_OK</status><value><u8>1</u8></value></fsapiResponse>`,
+        )
+        .join("");
+      return { body: `<${wrap}>${inner}</${wrap}>` };
+    };
+    const { fetch, calls } = fakeFetch({
+      GET_MULTIPLE: (url) => answer(url, "fsapiGetMultipleResponse"),
+      SET_MULTIPLE: (url) => answer(url, "fsapiSetMultipleResponse"),
+    });
+    const client = new FsapiClient({ host: "192.0.2.10", fetch });
+    const volumes = [
+      "netRemote.multiroom.client.volume0",
+      "netRemote.multiroom.client.volume1",
+      "netRemote.multiroom.client.volume2",
+      "netRemote.multiroom.client.volume3",
+    ] as const;
+    const mutes = [
+      "netRemote.multiroom.client.mute0",
+      "netRemote.multiroom.client.mute1",
+      "netRemote.multiroom.client.mute2",
+      "netRemote.multiroom.client.mute3",
+    ] as const;
+    const nodes = [
+      "netRemote.multiroom.group.masterVolume",
+      ...volumes,
+      ...mutes,
+      "netRemote.sys.power",
+    ] as const;
+
+    const result = await client.getMultiple(nodes);
+    expect(Object.keys(result.values)).toHaveLength(nodes.length);
+    expect(result.errors).toEqual({});
+    expect(calls.length).toBe(2);
+    expect(calls.every((url) => !tooLong(url))).toBe(true);
+
+    calls.length = 0;
+    const errors = await client.setMultiple(mutes.map((path) => [path, "MUTE"] as const));
+    expect(errors).toEqual({});
+    expect(calls.every((url) => !tooLong(url))).toBe(true);
+    expect(calls.flatMap((url) => url.searchParams.getAll("node"))).toEqual(mutes);
+  });
+
   it("serialises requests per radio by default", async () => {
     const { fetch, maxInFlight } = fakeFetch({ GET: { body: ok("<value><u8>1</u8></value>") } });
     const client = new FsapiClient({ host: "radio", fetch });

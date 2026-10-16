@@ -3,8 +3,11 @@ import { FsapiError } from "./errors.ts";
 
 /**
  * Multiroom groups (`netRemote.multiroom.*`), as UNDOK runs them (Analysis doc 05 §6). A group
- * has one server, which streams to up to four clients. Every change is a SET on the server,
- * except handing the server role over, which is a SET on the speaker taking it.
+ * has one server, which streams to up to four clients. Every change is a SET on the server.
+ *
+ * On real radios (ICD2018, SMRS30A1, Ruark MRx), a radio's own `group.*` nodes are right at once,
+ * while `listAll` lags by up to a minute and leaves the radio itself out. UNDOK's hand-over of the
+ * server role (`group.state` SERVER on a client) doesn't work there, so it isn't offered here.
  */
 
 /** UNDOK builds a multiroom UDN from this and the last part of the speaker's UPnP UDN. */
@@ -19,10 +22,13 @@ export const MULTIROOM_WAITS = {
   create: 500,
   /** After `group.addClient`. */
   add: 1_000,
-  /** After a client took the server role, before the old server is removed. */
-  handOver: 4_000,
   /** After `group.destroy`. */
   destroy: 500,
+  /**
+   * Not UNDOK's: how long to wait for `group.streamable` to turn TRUE, as a radio that was just
+   * switched on can report FALSE for a moment.
+   */
+  streamable: 3_000,
 };
 
 export type GroupRole = "NO_GROUP" | "CLIENT" | "SERVER";
@@ -66,6 +72,19 @@ export function isMultiroomFailure(error: unknown): error is MultiroomFailure {
   return error instanceof MultiroomFailure;
 }
 
+/** What a radio says about its own group: unlike `listAll`, right as soon as it changes. */
+export interface GroupState {
+  role: GroupRole;
+  groupId: string;
+  groupName: string;
+  /** For a client. */
+  clientNumber: number | undefined;
+  /** `multiroom.caps.protocolVersion`, as `listAll` reports it in `AudioSyncVersion`. */
+  syncVersion: string;
+  /** `multiroom.device.listAllVersion`: changes when the radio's `listAll` does. */
+  listVersion: number | undefined;
+}
+
 const GROUP_ROLES: readonly GroupRole[] = ["NO_GROUP", "CLIENT", "SERVER"];
 const STEREO_ROLES: readonly StereoRole[] = ["INDEPENDENT", "PRIMARY", "SECONDARY"];
 
@@ -84,8 +103,11 @@ function request(options: MultiroomOptions): RequestOptions {
   return options.signal ? { signal: options.signal } : {};
 }
 
-function pause(key: keyof typeof MULTIROOM_WAITS, options: MultiroomOptions): Promise<void> {
-  const ms = options.waits?.[key] ?? MULTIROOM_WAITS[key];
+function pause(
+  key: keyof typeof MULTIROOM_WAITS,
+  options: MultiroomOptions,
+  ms = options.waits?.[key] ?? MULTIROOM_WAITS[key],
+): Promise<void> {
   if (ms <= 0) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const signal = options.signal;
@@ -102,7 +124,11 @@ function pause(key: keyof typeof MULTIROOM_WAITS, options: MultiroomOptions): Pr
   });
 }
 
-/** Every multiroom speaker the radio knows of, itself included (`multiroom.device.listAll`). */
+/**
+ * The other multiroom speakers a radio knows of (`multiroom.device.listAll`). Real radios leave
+ * themselves out, may not know every speaker, and update the list slowly: use each radio's own
+ * {@link readGroupState} for group membership.
+ */
 export async function readMultiroomDevices(
   client: FsapiClient,
   options: RequestOptions = {},
@@ -139,6 +165,42 @@ export async function readMultiroomDevices(
   });
 }
 
+/** A radio's own group state; undefined when it has no multiroom. */
+export async function readGroupState(
+  client: FsapiClient,
+  options: RequestOptions = {},
+): Promise<GroupState | undefined> {
+  const { values, errors } = await client.getMultiple(
+    [
+      "netRemote.multiroom.group.state",
+      "netRemote.multiroom.group.id",
+      "netRemote.multiroom.group.name",
+      "netRemote.multiroom.device.clientIndex",
+      "netRemote.multiroom.caps.protocolVersion",
+      "netRemote.multiroom.device.listAllVersion",
+    ],
+    options,
+  );
+  const role = values["netRemote.multiroom.group.state"];
+  if (role === undefined) {
+    const missing =
+      errors["netRemote.multiroom.group.state"]?.fsStatus === "FS_NODE_DOES_NOT_EXIST";
+    if (missing) return undefined;
+  }
+  const known = role === "CLIENT" || role === "SERVER" ? role : "NO_GROUP";
+  const index = values["netRemote.multiroom.device.clientIndex"];
+  const protocol = values["netRemote.multiroom.caps.protocolVersion"];
+  return {
+    role: known,
+    groupId: known === "NO_GROUP" ? "" : (values["netRemote.multiroom.group.id"]?.trim() ?? ""),
+    groupName: known === "NO_GROUP" ? "" : (values["netRemote.multiroom.group.name"]?.trim() ?? ""),
+    clientNumber:
+      known === "CLIENT" && index !== undefined && index < MAX_GROUP_CLIENTS ? index : undefined,
+    syncVersion: protocol === undefined ? "" : String(protocol),
+    listVersion: values["netRemote.multiroom.device.listAllVersion"],
+  };
+}
+
 /**
  * Makes `server` the server of a new group, once its source can be shared
  * (`group.streamable`). Resolves with the new group id, or "" when the radio hasn't reported
@@ -149,8 +211,14 @@ export async function createGroup(
   name: string,
   options: MultiroomOptions = {},
 ): Promise<string> {
-  const streamable = await server.get("netRemote.multiroom.group.streamable", request(options));
-  if (streamable !== "TRUE") throw new MultiroomFailure("not-streamable");
+  const patience = options.waits?.streamable ?? MULTIROOM_WAITS.streamable;
+  const started = Date.now();
+  for (;;) {
+    const streamable = await server.get("netRemote.multiroom.group.streamable", request(options));
+    if (streamable === "TRUE") break;
+    if (Date.now() - started >= patience) throw new MultiroomFailure("not-streamable");
+    await pause("streamable", options, 500);
+  }
   await server.set("netRemote.multiroom.group.create", name, request(options));
   await pause("create", options);
   return (await server.get("netRemote.multiroom.group.id", request(options))).trim();
@@ -181,18 +249,4 @@ export async function destroyGroup(
 ): Promise<void> {
   await server.set("netRemote.multiroom.group.destroy", "DESTROY", request(options));
   await pause("destroy", options);
-}
-
-/**
- * Lets the server leave a group that keeps playing: a client takes the server role
- * (`group.state` SERVER, UNDOK never uses `group.becomeServer`), then removes the old server.
- */
-export async function handOverGroup(
-  newServer: FsapiClient,
-  oldServerUdn: string,
-  options: MultiroomOptions = {},
-): Promise<void> {
-  await newServer.set("netRemote.multiroom.group.state", "SERVER", request(options));
-  await pause("handOver", options);
-  await newServer.set("netRemote.multiroom.group.removeClient", oldServerUdn, request(options));
 }

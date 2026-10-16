@@ -10,6 +10,7 @@ These follow the UNDOK analysis (docs 02, 03, 09) while avoiding the app's known
 4. **No write probes for capability detection.** Use reads (`sys.caps.*`, FS_NODE_DOES_NOT_EXIST). UNDOK writes `sys.factoryReset=NONE`, `sys.audio.quality=100` and `nav.preset.delete=1000`.
 5. **Case-insensitive matching** for node names and list field names. Radios send lower-case field names; the catalog uses camel case.
 6. **GET_/SET_MULTIPLE with fallback.** On HTTP 404 (older firmware), switch to single requests for that radio.
+   - **Short URLs (added 2026-10-16):** radios answer HTTP 400 once a request's path and query pass about 385 characters (a 400-byte request line, seen on an ICD2018, an SMRS30A1 and a Ruark MRx). So `FsapiClient` splits GET_/SET_MULTIPLE into requests of at most 360 characters (`maxRequestLength`).
 7. **One request in flight per radio** by default. These are small devices; UNDOK caps at two. The GET_NOTIFIES long-poll runs outside this queue.
 8. **Sessions back off on takeover.** On HTTP 404 from GET_NOTIFIES, report "another controller is active" and retry with exponential backoff (5 s up to 5 min) instead of immediately reclaiming the session.
 9. **Never log PINs.** Error objects carry URLs with `pin=***`.

@@ -1,12 +1,17 @@
 import type { MultiroomDevice } from "@muga/fsapi-core";
-import { type SimulatedHome, startSimulatedHome, startSimulator } from "@muga/fsapi-sim";
+import {
+  type MultiroomNetworkOptions,
+  type SimulatedHome,
+  startSimulatedHome,
+  startSimulator,
+} from "@muga/fsapi-sim";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { matchSpeaker } from "../src/radio/multiroom.ts";
 import { RadioRegistry } from "../src/radio/registry.ts";
 
 const homes: SimulatedHome[] = [];
 const registries: RadioRegistry[] = [];
-const NO_WAITS = { create: 0, add: 0, handOver: 0, destroy: 0 };
+const NO_WAITS = { create: 0, add: 0, destroy: 0, streamable: 0 };
 
 afterEach(async () => {
   for (const r of registries.splice(0)) r.stop();
@@ -14,8 +19,8 @@ afterEach(async () => {
 });
 
 /** A home of `speakers`, of which the first `saved` are connected to a registry. */
-async function setup(speakers = 3, saved = speakers, listsItself = true) {
-  const home = await startSimulatedHome({ speakers, network: { listsItself } });
+async function setup(speakers = 3, saved = speakers, network: MultiroomNetworkOptions = {}) {
+  const home = await startSimulatedHome({ speakers, network });
   homes.push(home);
   const registry = new RadioRegistry({
     controller: { activeIntervalMs: 60_000, backgroundIntervalMs: 60_000 },
@@ -102,8 +107,9 @@ describe("MultiroomDirectory", () => {
     // The server's controller now reads the group's volumes too.
     const server = registry.controller(livingId);
     await server?.refreshNow();
+    // The master volume reads as the members' average.
     expect(server?.getSnapshot().mixer).toEqual({
-      master: 14,
+      master: 10,
       clients: [
         { volume: 10, muted: false },
         { volume: 6, muted: false },
@@ -113,9 +119,11 @@ describe("MultiroomDirectory", () => {
     });
     await server?.mixer.setClientVolume(1, 9);
     expect(bedroom?.get("netRemote.sys.audio.volume")).toBe(9);
+    // 14, 10 and 9 average 11: a master of 7 takes 4 steps off each, as real radios do.
     await server?.mixer.setMaster(7);
-    expect(living?.get("netRemote.sys.audio.volume")).toBe(7);
-    expect(kitchen?.get("netRemote.sys.audio.volume")).toBe(5);
+    expect(living?.get("netRemote.sys.audio.volume")).toBe(10);
+    expect(kitchen?.get("netRemote.sys.audio.volume")).toBe(6);
+    expect(home.speakers[2]?.get("netRemote.sys.audio.volume")).toBe(5);
     await server?.mixer.setGroupMute(true, [0, 1]);
     expect(kitchen?.get("netRemote.sys.audio.mute")).toBe(1);
     expect(living?.get("netRemote.sys.audio.mute")).toBe(1);
@@ -125,19 +133,33 @@ describe("MultiroomDirectory", () => {
     expect(server?.getSnapshot().mixer).toBeUndefined();
   });
 
-  it("includes the speaker it asked when its own list leaves it out", async () => {
-    const { home, directory, ids } = await setup(2, 2, false);
+  it("finds speakers that only another saved speaker knows of", async () => {
+    // As on real radios: Living room doesn't know Bedroom, and nobody lists itself.
+    const { home, registry, directory, ids } = await setup(3, 2, {
+      sees: (viewer, speaker) => !(viewer.endsWith("000001") && speaker.endsWith("000003")),
+    });
     const [livingId = "", kitchenId = ""] = ids;
-    // Read from Kitchen, the selected speaker: it lists only Living room.
-    const listed = directory.getSnapshot().speakers.map((s) => [s.name, s.radioId]);
-    expect(listed.sort()).toEqual([
-      ["Kitchen", kitchenId],
+    registry.select(livingId);
+    await directory.refresh(true);
+    expect(directory.getSnapshot().speakers.map((s) => [s.name, s.radioId])).toEqual([
       ["Living room", livingId],
+      ["Kitchen", kitchenId],
+      ["Bedroom", undefined],
     ]);
-    await directory.create(livingId, [home.speakers[1]?.udn ?? ""], "Downstairs");
+    expect(directory.getSnapshot().speakers[2]?.udn).toBe(home.speakers[2]?.udn);
+  });
+
+  it("shows groups at once from the speakers' own state, while their lists lag", async () => {
+    const { home, directory, ids } = await setup(3, 3, { listDelayMs: 60_000 });
+    const [livingId = "", kitchenId = "", bedroomId = ""] = ids;
+    const udns = home.speakers.map((s) => s.udn);
+    expect(await directory.create(livingId, udns.slice(1), "Downstairs")).toBe(true);
     const [group] = directory.getSnapshot().groups;
     expect(group?.server.radioId).toBe(livingId);
-    expect(group?.clients.map((c) => c.radioId)).toEqual([kitchenId]);
+    expect(group?.clients.map((c) => [c.radioId, c.clientNumber])).toEqual([
+      [kitchenId, 0],
+      [bedroomId, 1],
+    ]);
   });
 
   it("refuses to group from a source that can't be shared", async () => {
@@ -150,43 +172,39 @@ describe("MultiroomDirectory", () => {
     expect(directory.getSnapshot().groups).toEqual([]);
   });
 
-  it("adds and removes speakers, renames, and follows a hand-over", async () => {
+  it("adds and removes clients, and renames with the view following", async () => {
     const { home, registry, directory, ids } = await setup(4);
     const [living, kitchen, bedroom, study] = home.speakers.map((s) => s.udn);
-    const [livingId = "", , bedroomId = ""] = ids;
+    const [livingId = ""] = ids;
     await directory.create(livingId, [kitchen ?? ""], "Downstairs");
     const first = directory.getSnapshot().groups[0];
     registry.selectGroup(first?.id ?? "");
 
+    // The server is always kept, even when it's passed among the clients.
     await directory.edit(first?.id ?? "", {
       name: "Downstairs",
-      members: [living ?? "", bedroom ?? "", study ?? ""],
+      clients: [living ?? "", bedroom ?? "", study ?? ""],
     });
     let group = directory.getSnapshot().groups[0];
     expect(group?.id).toBe(first?.id);
+    expect(group?.server.radioId).toBe(livingId);
     expect(group?.clients.map((c) => c.name)).toEqual(["Bedroom", "Study"]);
 
     // A new name builds the group again, with a new id; the view follows it.
     await directory.edit(group?.id ?? "", {
       name: "Ground floor",
-      members: [living ?? "", bedroom ?? "", study ?? ""],
+      clients: [bedroom ?? "", study ?? ""],
     });
     group = directory.getSnapshot().groups[0];
     expect(group?.name).toBe("Ground floor");
     expect(group?.id).not.toBe(first?.id);
     expect(group?.clients.map((c) => c.name)).toEqual(["Bedroom", "Study"]);
-    expect(registry.getSnapshot().activeGroupId).toBe(group?.id);
+    expect(registry.getSnapshot()).toMatchObject({ activeId: livingId, activeGroupId: group?.id });
 
-    // The server leaves: Bedroom takes over, and the view moves to it.
-    await directory.edit(group?.id ?? "", {
-      name: "Ground floor",
-      members: [bedroom ?? "", study ?? ""],
-    });
-    group = directory.getSnapshot().groups[0];
-    expect(group?.server.name).toBe("Bedroom");
-    expect(group?.clients.map((c) => c.name)).toEqual(["Study"]);
-    expect(registry.getSnapshot()).toMatchObject({ activeId: bedroomId, activeGroupId: group?.id });
-    expect(registry.controller(livingId)?.getSnapshot().mixer).toBeUndefined();
+    // No clients left: ungrouped.
+    await directory.edit(group?.id ?? "", { name: "Ground floor", clients: [] });
+    expect(directory.getSnapshot().groups).toEqual([]);
+    expect(registry.getSnapshot().activeGroupId).toBeUndefined();
   });
 
   it("leaves and ungroups, and the view goes back to the speaker", async () => {
@@ -196,9 +214,16 @@ describe("MultiroomDirectory", () => {
     await directory.create(livingId, udns.slice(1), "Downstairs");
     registry.selectGroupOf(livingId);
 
-    // A client leaves; the server leaving a group of two ungroups it.
+    // A client leaves.
     expect(await directory.leave(kitchenId)).toBe(true);
     expect(directory.getSnapshot().groups[0]?.clients.map((c) => c.radioId)).toEqual([bedroomId]);
+
+    // The server can't leave a group that goes on: leaving ungroups everyone.
+    await directory.edit(directory.getSnapshot().groups[0]?.id ?? "", {
+      name: "Downstairs",
+      clients: udns.slice(1),
+    });
+    expect(directory.getSnapshot().groups[0]?.clients).toHaveLength(2);
     expect(await directory.leave(livingId)).toBe(true);
     expect(directory.getSnapshot().groups).toEqual([]);
     expect(registry.getSnapshot()).toMatchObject({ activeId: livingId, activeGroupId: undefined });

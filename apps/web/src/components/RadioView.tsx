@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import { currentModeId } from "../radio/controller.ts";
 import { useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
 import { Icon } from "./Icon.tsx";
-import { Library } from "./Library.tsx";
+import { Library, TakeOverSources } from "./Library.tsx";
 import { GroupMembership, MultiroomStatus } from "./MultiroomNotices.tsx";
 import { Notices } from "./Notices.tsx";
 import { NowPlaying } from "./NowPlaying.tsx";
@@ -25,19 +25,24 @@ export function RadioView({ id }: { id: string }) {
   const [panel, setPanel] = useState<Panel>("player");
   const settingsButton = useRef<HTMLButtonElement>(null);
   const groupButton = useRef<HTMLButtonElement>(null);
+  const group = groups.find((g) => members(g).some((s) => s.radioId === id));
+  // A client plays its group's stream: the group is controlled through its server.
+  const client = group !== undefined && group.server.radioId !== id;
+  // A client reports no station name of its own; its server's playback is shown instead.
+  const server = useRadio(client ? group.server.radioId : undefined);
+  const serverController = server?.controller;
+  useEffect(() => serverController?.watch(), [serverController]);
   if (!radio) return null;
   const { snapshot, controller } = radio;
   const { text, tone } = statusLine(snapshot, t);
   const canPower = snapshot.connection === "online" && snapshot.power !== undefined;
-  const group = groups.find((g) => members(g).some((s) => s.radioId === id));
   // Multiroom speakers that aren't in a group yet can start one.
   const canGroup = speakers.some((s) => s.radioId === id) && !group;
-  // A client plays its group's stream: the group is controlled through its server.
-  const client = group !== undefined && group.server.radioId !== id;
   const playing = snapshot.connection === "online" && snapshot.power !== false;
+  const shown = client && server ? server.snapshot : snapshot;
   const status =
     client && playing
-      ? [t("groups.status.member", { group: group.name }), snapshot.play.name]
+      ? [t("groups.status.member", { group: group.name }), shown.play.name]
           .filter(Boolean)
           .join(" · ")
       : text;
@@ -94,7 +99,14 @@ export function RadioView({ id }: { id: string }) {
             className={`button button--compact power-button${snapshot.power ? " button--ghost" : ""}`}
             disabled={!canPower}
             aria-pressed={snapshot.power === true}
-            onClick={() => void controller.setPower(!snapshot.power)}
+            onClick={() => {
+              // Speakers in a group go to standby together (ADR 0008).
+              const whole = group && snapshot.power;
+              if (whole && !window.confirm(t("groups.standby.confirm", { group: group.name }))) {
+                return;
+              }
+              void controller.setPower(!snapshot.power);
+            }}
           >
             <Icon name="power" size={20} />
             <span className="button__text">
@@ -124,14 +136,18 @@ export function RadioView({ id }: { id: string }) {
       ) : (
         <div className="radio-grid">
           <div className="card player">
-            <NowPlaying snapshot={snapshot} />
+            <NowPlaying snapshot={shown} />
             {snapshot.tuner && snapshot.power !== false && currentModeId(snapshot) === "FM" && (
               <Tuner tuner={snapshot.tuner} snapshot={snapshot} controller={controller} />
             )}
             {!client && <Transport snapshot={snapshot} controller={controller} />}
             <VolumeControl snapshot={snapshot} controller={controller} />
           </div>
-          {!client && <Library snapshot={snapshot} controller={controller} />}
+          {client ? (
+            <TakeOverSources snapshot={snapshot} controller={controller} group={group} />
+          ) : (
+            <Library snapshot={snapshot} controller={controller} />
+          )}
         </div>
       )}
 

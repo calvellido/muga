@@ -1631,3 +1631,14 @@ input {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+/* A client's sources: choosing one makes it lead its group. */
+.card-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.takeover__hint {
+  margin-block: 4px 14px;
+  font-size: 0.9rem;
+}

@@ -190,7 +190,10 @@ export class RadioController {
   private readonly opts: Required<Omit<RadioControllerOptions, "fetch">>;
 
   private running = false;
-  private active = false;
+  /** The selected radio. */
+  private selected = false;
+  /** Pages showing this radio's playback without selecting it (see `watch`). */
+  private watchers = 0;
   private serving = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private currentPoll: Promise<void> | undefined;
@@ -271,7 +274,7 @@ export class RadioController {
       this.setActive(active);
       return;
     }
-    this.active = active;
+    this.selected = active;
     this.running = true;
     this.schedule(0);
   }
@@ -282,12 +285,38 @@ export class RadioController {
   }
 
   setActive(active: boolean): void {
-    if (this.active === active) return;
-    this.active = active;
-    if (active) {
-      this.lastTrackKey = "";
-      this.schedule(0);
-    }
+    const before = this.active;
+    this.selected = active;
+    this.activeChanged(before);
+  }
+
+  /**
+   * Polls this radio in full while something shows its playback without selecting it, such as
+   * the page of a speaker in its group. Returns the function that stops it.
+   */
+  watch(): () => void {
+    const before = this.active;
+    this.watchers++;
+    this.activeChanged(before);
+    let watching = true;
+    return () => {
+      if (!watching) return;
+      watching = false;
+      const was = this.active;
+      this.watchers--;
+      this.activeChanged(was);
+    };
+  }
+
+  /** Read at the fast rate, with track details: selected, or watched. */
+  private get active(): boolean {
+    return this.selected || this.watchers > 0;
+  }
+
+  private activeChanged(before: boolean): void {
+    if (this.active === before || !this.active) return;
+    this.lastTrackKey = "";
+    this.schedule(0);
   }
 
   /** While this radio serves the group on screen, its group volumes are polled too. */

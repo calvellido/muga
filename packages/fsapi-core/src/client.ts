@@ -35,6 +35,12 @@ export interface FsapiClientOptions {
   notifyTimeoutMs?: number;
   /** Concurrent requests per radio (the notification long-poll is not counted). */
   maxConcurrent?: number;
+  /**
+   * Longest path and query a GET_/SET_MULTIPLE may use; longer ones are split into several
+   * requests. Radios answer HTTP 400 past about 385 characters (a 400-byte request line, seen on
+   * an ICD2018, an SMRS30A1 and a Ruark MRx). Default 360.
+   */
+  maxRequestLength?: number;
 }
 
 export interface RequestOptions {
@@ -81,6 +87,7 @@ export class FsapiClient {
   private readonly timeoutMs: number;
   private readonly notifyTimeoutMs: number;
   private readonly queue: RequestQueue;
+  private readonly maxRequestLength: number;
   private multipleVerbs = true;
 
   constructor(options: FsapiClientOptions) {
@@ -90,6 +97,7 @@ export class FsapiClient {
     this.timeoutMs = options.timeoutMs ?? 10_000;
     this.notifyTimeoutMs = options.notifyTimeoutMs ?? 40_000;
     this.queue = new RequestQueue(options.maxConcurrent ?? 1);
+    this.maxRequestLength = options.maxRequestLength ?? 360;
   }
 
   /** False once the radio answered GET_/SET_MULTIPLE with 404; single requests are used after that. */
@@ -127,7 +135,10 @@ export class FsapiClient {
 
   // Multiple
 
-  /** Results keyed by the requested node name. Per-node FS_* failures are returned, not thrown. */
+  /**
+   * Results keyed by the requested node name. Per-node FS_* failures are returned, not thrown.
+   * Long node lists go out as several requests (see `maxRequestLength`).
+   */
   async getMultipleRaw(
     nodes: readonly string[],
     options: RequestOptions = {},
@@ -135,18 +146,20 @@ export class FsapiClient {
     const results = new Map<string, WireValue | FsapiError>();
     if (this.multipleVerbs && nodes.length > 1) {
       try {
-        const params = nodes.map((node): QueryParam => ["node", node]);
-        const entries = parseMultipleResponse(await this.send("GET_MULTIPLE", { params }, options));
-        const byLower = new Map(entries.map((e) => [e.node.toLowerCase(), e]));
-        for (const node of nodes) {
-          const entry = byLower.get(node.toLowerCase());
-          if (entry?.status === "FS_OK" && entry.value) results.set(node, entry.value);
-          else {
-            const fsStatus = entry?.status ?? "FS_NODE_DOES_NOT_EXIST";
-            results.set(
-              node,
-              new FsapiError("status", `${node} failed with ${fsStatus}`, { fsStatus, node }),
-            );
+        for (const batch of this.batches("GET_MULTIPLE", nodes, (node) => [["node", node]])) {
+          const params = batch.map((node): QueryParam => ["node", node]);
+          const xml = await this.send("GET_MULTIPLE", { params }, options);
+          const byLower = new Map(parseMultipleResponse(xml).map((e) => [e.node.toLowerCase(), e]));
+          for (const node of batch) {
+            const entry = byLower.get(node.toLowerCase());
+            if (entry?.status === "FS_OK" && entry.value) results.set(node, entry.value);
+            else {
+              const fsStatus = entry?.status ?? "FS_NODE_DOES_NOT_EXIST";
+              results.set(
+                node,
+                new FsapiError("status", `${node} failed with ${fsStatus}`, { fsStatus, node }),
+              );
+            }
           }
         }
         return results;
@@ -199,19 +212,21 @@ export class FsapiClient {
     const errors: Partial<Record<WritablePath, FsapiError>> = {};
     if (this.multipleVerbs && encoded.length > 1) {
       try {
-        const params = encoded.flatMap(([node, value]): QueryParam[] => [
+        const toParams = ([node, value]: (typeof encoded)[number]): QueryParam[] => [
           ["node", node],
           ["value", value],
-        ]);
-        const replies = parseMultipleResponse(await this.send("SET_MULTIPLE", { params }, options));
-        const byLower = new Map(replies.map((r) => [r.node.toLowerCase(), r]));
-        for (const [path] of encoded) {
-          const fsStatus = byLower.get(path.toLowerCase())?.status ?? "FS_FAIL";
-          if (fsStatus !== "FS_OK") {
-            errors[path] = new FsapiError("status", `${path} failed with ${fsStatus}`, {
-              fsStatus,
-              node: path,
-            });
+        ];
+        for (const batch of this.batches("SET_MULTIPLE", encoded, toParams)) {
+          const xml = await this.send("SET_MULTIPLE", { params: batch.flatMap(toParams) }, options);
+          const byLower = new Map(parseMultipleResponse(xml).map((r) => [r.node.toLowerCase(), r]));
+          for (const [path] of batch) {
+            const fsStatus = byLower.get(path.toLowerCase())?.status ?? "FS_FAIL";
+            if (fsStatus !== "FS_OK") {
+              errors[path] = new FsapiError("status", `${path} failed with ${fsStatus}`, {
+                fsStatus,
+                node: path,
+              });
+            }
           }
         }
         return errors;
@@ -356,6 +371,27 @@ export class FsapiClient {
   }
 
   // Transport
+
+  /** Splits items into requests whose path and query fit in `maxRequestLength`. */
+  private batches<T>(verb: Verb, items: readonly T[], toParams: (item: T) => QueryParam[]): T[][] {
+    const length = (batch: readonly T[]) => {
+      const url = new URL(
+        buildUrl(this.baseUrl, verb, { pin: this.pin, params: batch.flatMap(toParams) }),
+      );
+      return url.pathname.length + url.search.length;
+    };
+    const out: T[][] = [];
+    let current: T[] = [];
+    for (const item of items) {
+      if (current.length > 0 && length([...current, item]) > this.maxRequestLength) {
+        out.push(current);
+        current = [];
+      }
+      current.push(item);
+    }
+    if (current.length > 0) out.push(current);
+    return out;
+  }
 
   private send(
     verb: Verb,
