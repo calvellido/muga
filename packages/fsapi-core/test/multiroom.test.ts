@@ -4,7 +4,6 @@ import {
   addToGroup,
   createGroup,
   destroyGroup,
-  handOverGroup,
   isMultiroomFailure,
   multiroomUdn,
   readMultiroomDevices,
@@ -38,7 +37,7 @@ function radio(values: Record<string, string> = {}, lists: Record<string, string
   return { client: new FsapiClient({ host: "192.0.2.10", fetch }), calls };
 }
 
-const NO_WAITS = { waits: { create: 0, add: 0, handOver: 0, destroy: 0 } };
+const NO_WAITS = { waits: { create: 0, add: 0, destroy: 0, streamable: 0 } };
 
 const field = (name: string, inner: string) => `<field name="${name}">${inner}</field>`;
 const device = (key: number, fields: Record<string, string>) =>
@@ -147,6 +146,22 @@ describe("multiroom", () => {
     ]);
   });
 
+  it("waits for a radio that was just switched on to report a shareable source", async () => {
+    // FALSE for the first two reads.
+    let log: string[] = [];
+    const reads = () => log.filter((c) => c === "GET multiroom.group.streamable").length;
+    const { client, calls } = radio({
+      get "multiroom.group.streamable"() {
+        return reads() < 3 ? "<u8>0</u8>" : "<u8>1</u8>";
+      },
+      "multiroom.group.id": "<c8_array>g-1</c8_array>",
+    });
+    log = calls;
+    const waits = { waits: { ...NO_WAITS.waits, streamable: 5_000 } };
+    await expect(createGroup(client, "Group 1", waits)).resolves.toBe("g-1");
+    expect(calls.filter((c) => c === "GET multiroom.group.streamable")).toHaveLength(3);
+  });
+
   it("refuses to create a group from a source that can't be shared", async () => {
     const { client, calls } = radio({ "multiroom.group.streamable": "<u8>0</u8>" });
     const error = await createGroup(client, "Group 1", NO_WAITS).catch((e: unknown) => e);
@@ -154,18 +169,15 @@ describe("multiroom", () => {
     expect(calls).toEqual(["GET multiroom.group.streamable"]);
   });
 
-  it("adds, removes and ungroups on the server, and hands the server role over", async () => {
+  it("adds, removes and ungroups on the server", async () => {
     const { client, calls } = radio();
     await addToGroup(client, "UDN-2", NO_WAITS);
     await removeFromGroup(client, "UDN-2", NO_WAITS);
     await destroyGroup(client, NO_WAITS);
-    await handOverGroup(client, "UDN-1", NO_WAITS);
     expect(calls).toEqual([
       "SET multiroom.group.addClient=UDN-2",
       "SET multiroom.group.removeClient=UDN-2",
       "SET multiroom.group.destroy=1",
-      "SET multiroom.group.state=2",
-      "SET multiroom.group.removeClient=UDN-1",
     ]);
   });
 });

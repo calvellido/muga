@@ -70,6 +70,8 @@ export class RadioRegistry {
   private readonly controllers = new Map<string, RadioController>();
   private readonly storage: StorageLike;
   private visible = true;
+  /** The speakers of the group on screen, to find it again after it's built anew. */
+  private groupSpeakers = new Set<string>();
   /** Per radio, what the multiroom list depends on: whether it answers, and its UDN. */
   private readonly seen = new Map<string, string>();
 
@@ -214,6 +216,8 @@ export class RadioRegistry {
     if (!serverId || !this.snapshot.radios.some((r) => r.id === serverId)) return;
     if (serverId === this.snapshot.activeId && groupId === this.snapshot.activeGroupId) return;
     if (serverId !== this.snapshot.activeId) this.leaveGroupView();
+    const group = this.multiroom.group(groupId);
+    if (group) this.groupSpeakers = new Set([group.server, ...group.clients].map((s) => s.udn));
     this.activate(serverId, groupId);
     this.controller(serverId)?.setGroupServer(true);
   }
@@ -249,21 +253,31 @@ export class RadioRegistry {
     if (this.snapshot.activeGroupId) this.controller(this.snapshot.activeId)?.setGroupServer(false);
   }
 
-  /** Keeps a group on screen through changes: a rename gives it a new id, a hand-over a new server. */
+  /**
+   * Keeps a group on screen through changes. A rename, or its server leaving, builds the group
+   * again with a new id (and server): the view moves to the group with most of the same speakers.
+   */
   private followGroup(): void {
-    const { activeGroupId, activeId } = this.snapshot;
+    const { activeGroupId } = this.snapshot;
     const directory = this.multiroom.getSnapshot();
     if (!activeGroupId || directory.busy || directory.status !== "ready") return;
-    const group: MultiroomGroup | undefined =
+    const udns = (g: MultiroomGroup) => [g.server, ...g.clients].map((s) => s.udn);
+    const group =
       this.multiroom.group(activeGroupId) ??
-      directory.groups.find((g) => g.server.radioId !== undefined && g.server.radioId === activeId);
+      directory.groups
+        .map((g) => ({ g, shared: udns(g).filter((u) => this.groupSpeakers.has(u)).length }))
+        .filter(({ shared }) => shared > 0)
+        .sort((a, b) => b.shared - a.shared)[0]?.g;
     const serverId = group?.server.radioId;
     if (!group || !serverId || !this.snapshot.radios.some((r) => r.id === serverId)) {
       this.leaveGroupView();
+      this.groupSpeakers = new Set();
       this.commit({ ...this.snapshot, activeGroupId: undefined });
       return;
     }
-    if (group.id !== activeGroupId || serverId !== activeId) this.selectGroup(group.id);
+    this.groupSpeakers = new Set(udns(group));
+    if (group.id !== activeGroupId || serverId !== this.snapshot.activeId)
+      this.selectGroup(group.id);
   }
 
   /** A radio came online or reported its UDN: the multiroom list may now include it. */

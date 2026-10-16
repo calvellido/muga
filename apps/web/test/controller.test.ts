@@ -65,6 +65,27 @@ describe("RadioController", () => {
     await vi.waitFor(() => expect(controller?.getSnapshot().play.text).toBe("Simulated broadcast"));
   });
 
+  it("reads a watched radio in full without selecting it", async () => {
+    sim = await startSimulator();
+    controller = new RadioController(
+      { id: "sim", host: sim.host, pin: "1234", name: "Sim" },
+      { activeIntervalMs: 60_000, backgroundIntervalMs: 60_000 },
+    );
+    controller.start(false);
+    await controller.refreshNow();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(controller.getSnapshot().play.text).toBe("");
+    // A grouped speaker's page shows its server's playback.
+    const release = controller.watch();
+    await vi.waitFor(() => expect(controller?.getSnapshot().play.text).toBe("Simulated broadcast"));
+    release();
+    release();
+    sim.set("netRemote.play.info.text", "Changed");
+    await controller.refreshNow();
+    // Back to background reads, which leave the text alone.
+    expect(controller.getSnapshot().play.text).toBe("Simulated broadcast");
+  });
+
   it("coalesces rapid volume changes: latest value wins, one SET in flight", async () => {
     const { sim, controller } = await setup();
     const results = [3, 4, 5, 6, 7].map((v) => controller.setVolume(v));

@@ -189,8 +189,6 @@ export const DEFAULT_PROFILE: SimProfile = {
       { key: 4, id: "FM", selectable: 1, label: "FM", streamable: 0, modeType: 0 },
       { key: 5, id: "BLUETOOTH", selectable: 1, label: "Bluetooth", streamable: 0, modeType: 0 },
       { key: 6, id: "AUXIN", selectable: 1, label: "Aux in", streamable: 0, modeType: 0 },
-      // A multiroom client plays its server's stream in this hidden source.
-      { key: 7, id: "Audsync", selectable: 0, label: "Multiroom", streamable: 0, modeType: 0 },
     ],
     "netRemote.sys.caps.eqPresets": [
       { key: 0, label: "My EQ" },

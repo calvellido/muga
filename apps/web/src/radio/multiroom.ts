@@ -3,13 +3,13 @@ import {
   createGroup,
   destroyGroup,
   type FsapiClient,
-  handOverGroup,
+  type GroupState,
   isFsapiError,
-  MAX_GROUP_CLIENTS,
   MULTIROOM_UDN_PREFIX,
   type MultiroomDevice,
   type MultiroomOptions,
   multiroomUdn,
+  readGroupState,
   readMultiroomDevices,
   removeFromGroup,
   udnSuffix,
@@ -33,6 +33,8 @@ export interface MultiroomGroup {
 
 export type MultiroomTask = "create" | "edit" | "dissolve" | "leave";
 
+const key = (udn: string) => udn.trim().toUpperCase();
+
 export interface MultiroomSnapshot {
   /** unsupported: none of the saved speakers that answered has multiroom. */
   status: "idle" | "loading" | "ready" | "unsupported" | "error";
@@ -54,13 +56,13 @@ export interface MultiroomHost {
 }
 
 export interface MultiroomDirectoryOptions {
-  /** How often the speaker list's version is checked. Default 10 s. */
+  /** How often each saved speaker's group state is read. Default 10 s. */
   intervalMs?: number;
-  /** The list is read again anyway after this long. Default 60 s. */
+  /** A speaker's list is read again after this long, even if its version didn't change. Default 60 s. */
   maxAgeMs?: number;
   /**
-   * Wait after a change before reading the list again: radios update it in the background.
-   * UNDOK waits 3 s. Default 3000 ms.
+   * Wait after a change before reading the speakers again. Their own group nodes change at once
+   * on real radios; this gives clients a moment to join. Default 1500 ms (UNDOK waits 3 s).
    */
   settleMs?: number;
   /** UNDOK's waits between the steps of a change (tests use 0). */
@@ -113,9 +115,12 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * The multiroom network as the saved speakers see it: any one of them lists every multiroom
- * speaker with its group (`multiroom.device.listAll`, doc 05 §6.1). It's read from the selected
- * speaker when it can, and again whenever its version changes.
+ * The multiroom network as the saved speakers see it (doc 05 §6.1, ADR 0008). On real radios:
+ * - each speaker's `listAll` names the other speakers it knows of, not itself, and not always
+ *   all of them, so the lists of every saved speaker are merged to find speakers;
+ * - those lists lag behind group changes by up to a minute, while each speaker's own `group.*`
+ *   nodes are right at once, so a saved speaker's group comes from its own nodes.
+ * Unsaved speakers only appear in the lists, so their group is as fresh as the lists are.
  */
 export class MultiroomDirectory {
   private snapshot: MultiroomSnapshot = {
@@ -129,8 +134,11 @@ export class MultiroomDirectory {
   private readonly opts: Required<Omit<MultiroomDirectoryOptions, "waits">> & {
     waits: MultiroomOptions;
   };
-  private devices: MultiroomDevice[] = [];
-  private read: { radioId: string; version: number; at: number } | undefined;
+  /** Per saved speaker that answered: its own group state and its list. */
+  private readonly known = new Map<
+    string,
+    { own: GroupState; devices: MultiroomDevice[]; listedAt: number }
+  >();
   /** Radios that answered without multiroom nodes. */
   private readonly without = new Set<string>();
   private running = false;
@@ -145,7 +153,7 @@ export class MultiroomDirectory {
     this.opts = {
       intervalMs: options.intervalMs ?? 10_000,
       maxAgeMs: options.maxAgeMs ?? 60_000,
-      settleMs: options.settleMs ?? 3_000,
+      settleMs: options.settleMs ?? 1_500,
       now: options.now ?? Date.now,
       waits: options.waits ? { waits: options.waits } : {},
     };
@@ -169,7 +177,7 @@ export class MultiroomDirectory {
     clearTimeout(this.timer);
   }
 
-  /** Reads the speaker list now; `force` even when its version hasn't changed. */
+  /** Reads the speakers now; `force` reads their lists too, even if unchanged. */
   refresh(force = false): Promise<void> {
     if (this.current) {
       this.forceNext ||= force;
@@ -183,10 +191,11 @@ export class MultiroomDirectory {
     return this.current;
   }
 
-  /** The saved speakers changed (connected, forgotten, or now reachable): map the list again. */
+  /** The saved speakers changed (connected, forgotten, or now reachable): map them again. */
   radiosChanged(): void {
     const ids = new Set(this.host.radios().map((r) => r.id));
     for (const id of this.without) if (!ids.has(id)) this.without.delete(id);
+    for (const id of this.known.keys()) if (!ids.has(id)) this.known.delete(id);
     this.remap();
   }
 
@@ -226,45 +235,35 @@ export class MultiroomDirectory {
   }
 
   /**
-   * Renames a group and changes its speakers (by UDN, the server included while it stays).
-   * A new name means building the group again, since `group.name` is read-only: UNDOK does the
-   * same. A server leaving hands its role to the first remaining speaker. Fewer than two
-   * speakers ungroups them.
+   * Renames a group and sets its clients (by UDN); its server always stays. No clients left
+   * ungroups it. A new name builds the group again on the same server, since `group.name` is
+   * read-only (UNDOK does the same).
+   *
+   * The server can't leave a group that goes on: real radios don't hand the server role over,
+   * and a speaker that was a client has no source, so it can't take clients either (ADR 0008).
    */
-  edit(groupId: string, change: { name: string; members: readonly string[] }): Promise<boolean> {
+  edit(groupId: string, change: { name: string; clients: readonly string[] }): Promise<boolean> {
     const group = this.group(groupId);
     if (!group) return Promise.resolve(false);
-    const key = (udn: string) => udn.trim().toUpperCase();
-    const desired = new Set(change.members.map(key));
-    if (desired.size < 2) return this.dissolve(groupId);
-    const serverUdn = key(group.server.udn);
+    const serverKey = key(group.server.udn);
+    const desired = new Set(change.clients.map(key).filter((udn) => udn !== serverKey));
+    if (desired.size === 0) return this.dissolve(groupId);
     const name = change.name.trim() || group.name;
     return this.task("edit", groupId, async () => {
       const server = this.clientFor(group.server);
-      const current = new Set([serverUdn, ...group.clients.map((c) => key(c.udn))]);
-      const renamed = name !== group.name;
-      if (renamed) {
+      if (name !== group.name) {
         await destroyGroup(server, this.opts.waits);
         await createGroup(server, name, this.opts.waits);
-        for (const udn of desired) {
-          if (udn !== serverUdn) await addToGroup(server, udn, this.opts.waits);
-        }
-      } else {
-        for (const udn of desired) {
-          if (!current.has(udn)) await addToGroup(server, udn, this.opts.waits);
-        }
-        for (const client of group.clients) {
-          if (!desired.has(key(client.udn)))
-            await removeFromGroup(server, client.udn, this.opts.waits);
-        }
+        for (const udn of desired) await addToGroup(server, udn, this.opts.waits);
+        return;
       }
-      if (!desired.has(serverUdn)) {
-        const nextUdn = [...group.clients.map((c) => key(c.udn)), ...desired].find(
-          (udn) => udn !== serverUdn && desired.has(udn),
-        );
-        const next = this.snapshot.speakers.find((s) => key(s.udn) === nextUdn);
-        if (!next) throw new Error("No speaker left to take over the group");
-        await handOverGroup(this.clientFor(next), group.server.udn, this.opts.waits);
+      const current = new Set(group.clients.map((c) => key(c.udn)));
+      for (const udn of desired) {
+        if (!current.has(udn)) await addToGroup(server, udn, this.opts.waits);
+      }
+      for (const client of group.clients) {
+        if (!desired.has(key(client.udn)))
+          await removeFromGroup(server, client.udn, this.opts.waits);
       }
     });
   }
@@ -277,22 +276,15 @@ export class MultiroomDirectory {
     );
   }
 
-  /** Takes a saved speaker out of its group. A server hands over to a client, or ungroups. */
+  /** Takes a saved speaker out of its group; for its server, that ungroups everyone (see `edit`). */
   leave(radioId: string): Promise<boolean> {
     const group = this.groupOf(radioId);
     if (!group) return Promise.resolve(false);
-    const server = this.clientFor(group.server);
-    if (group.server.radioId !== radioId) {
-      const client = group.clients.find((c) => c.radioId === radioId);
-      if (!client) return Promise.resolve(false);
-      return this.task("leave", group.id, () =>
-        removeFromGroup(server, client.udn, this.opts.waits),
-      );
-    }
-    const [next, ...others] = group.clients;
-    if (!next || others.length === 0) return this.dissolve(group.id);
+    if (group.server.radioId === radioId) return this.dissolve(group.id);
+    const client = group.clients.find((c) => c.radioId === radioId);
+    if (!client) return Promise.resolve(false);
     return this.task("leave", group.id, () =>
-      handOverGroup(this.clientFor(next), group.server.udn, this.opts.waits),
+      removeFromGroup(this.clientFor(group.server), client.udn, this.opts.waits),
     );
   }
 
@@ -333,25 +325,23 @@ export class MultiroomDirectory {
     this.timer = setTimeout(() => void this.refresh(), delay);
   }
 
-  /** Saved speakers to read the list from: online ones with multiroom, the selected first. */
-  private sources(): RadioController[] {
+  /** Saved speakers in the order their lists count: the selected one first. */
+  private ordered(): string[] {
     const active = this.host.activeId();
-    const ids = this.host
+    return this.host
       .radios()
       .map((r) => r.id)
       .sort((a, b) => Number(b === active) - Number(a === active));
-    return ids.flatMap((id) => {
-      const controller = this.host.controller(id);
-      return controller && !this.without.has(id) && controller.getSnapshot().connection === "online"
-        ? [controller]
-        : [];
-    });
   }
 
   private async load(force: boolean): Promise<void> {
-    // Mid-change lists show half-done groups; the change reads the list itself when it's done.
+    // Mid-change states show half-done groups; the change reads them itself when it's done.
     if (this.snapshot.busy && !force) return;
-    const sources = this.sources();
+    const sources = this.ordered().flatMap((id) => {
+      const controller = this.host.controller(id);
+      const online = controller?.getSnapshot().connection === "online";
+      return controller && online && !this.without.has(id) ? [controller] : [];
+    });
     if (sources.length === 0) {
       if (this.host.radios().every((r) => this.without.has(r.id)) && this.without.size > 0) {
         this.update({ status: "unsupported", speakers: [], groups: [] });
@@ -360,90 +350,98 @@ export class MultiroomDirectory {
     }
     if (this.snapshot.status === "idle") this.update({ status: "loading" });
     let failure: unknown;
-    for (const source of sources) {
-      const radioId = source.getSnapshot().config.id;
-      try {
-        const version = await source.client.get("netRemote.multiroom.device.listAllVersion");
-        const fresh =
-          this.read?.radioId === radioId &&
-          this.read.version === version &&
-          this.opts.now() - this.read.at < this.opts.maxAgeMs;
-        if (fresh && !force && this.snapshot.status === "ready") return this.remap();
-        this.devices = await this.withSelf(source, await readMultiroomDevices(source.client));
-        this.read = { radioId, version, at: this.opts.now() };
-        return this.remap();
-      } catch (error) {
-        if (isFsapiError(error, "status") && error.fsStatus === "FS_NODE_DOES_NOT_EXIST") {
-          this.without.add(radioId);
-        } else {
-          failure = error;
+    await Promise.all(
+      sources.map(async (source) => {
+        const radioId = source.getSnapshot().config.id;
+        try {
+          const own = await readGroupState(source.client);
+          if (!own) {
+            this.without.add(radioId);
+            this.known.delete(radioId);
+            return;
+          }
+          const previous = this.known.get(radioId);
+          const now = this.opts.now();
+          const fresh =
+            !force &&
+            previous !== undefined &&
+            previous.own.listVersion === own.listVersion &&
+            now - previous.listedAt < this.opts.maxAgeMs;
+          const devices = fresh ? previous.devices : await readMultiroomDevices(source.client);
+          this.known.set(radioId, { own, devices, listedAt: fresh ? previous.listedAt : now });
+        } catch (error) {
+          if (isFsapiError(error, "status") && error.fsStatus === "FS_NODE_DOES_NOT_EXIST") {
+            this.without.add(radioId);
+            this.known.delete(radioId);
+          } else {
+            failure = error;
+          }
         }
-      }
+      }),
+    );
+    if (this.known.size === 0) {
+      if (failure === undefined) this.update({ status: "unsupported", speakers: [], groups: [] });
+      else if (this.snapshot.status !== "ready") this.update({ status: "error" });
+      return;
     }
-    if (failure === undefined) {
-      this.devices = [];
-      this.update({ status: "unsupported", speakers: [], groups: [] });
-    } else if (this.snapshot.status !== "ready") {
-      this.update({ status: "error" });
-    }
-  }
-
-  /**
-   * Adds the radio that was asked when its own list leaves it out (whether real radios list
-   * themselves is unverified), from its `group.*` nodes.
-   */
-  private async withSelf(
-    source: RadioController,
-    devices: MultiroomDevice[],
-  ): Promise<MultiroomDevice[]> {
-    const { config, udn, name } = source.getSnapshot();
-    if (devices.some((d) => matchSpeaker(d, [{ config, udn }]) !== undefined)) return devices;
-    const { values } = await source.client.getMultiple([
-      "netRemote.multiroom.group.state",
-      "netRemote.multiroom.group.id",
-      "netRemote.multiroom.group.name",
-      "netRemote.multiroom.device.clientIndex",
-    ]);
-    const role = values["netRemote.multiroom.group.state"];
-    const index = values["netRemote.multiroom.device.clientIndex"];
-    const self: MultiroomDevice = {
-      udn: multiroomUdn(udn) || `${MULTIROOM_UDN_PREFIX}${identity(config.id)}`,
-      name,
-      ip: config.host,
-      syncVersion: "",
-      groupId: values["netRemote.multiroom.group.id"]?.trim() ?? "",
-      groupName: values["netRemote.multiroom.group.name"]?.trim() ?? "",
-      role: role === "CLIENT" || role === "SERVER" ? role : "NO_GROUP",
-      clientNumber:
-        role === "CLIENT" && index !== undefined && index < MAX_GROUP_CLIENTS ? index : undefined,
-      stereo: { id: "", role: "INDEPENDENT", name: "" },
-    };
-    return [self, ...devices];
+    this.remap();
   }
 
   private remap(): void {
-    if (this.read === undefined) return;
+    if (this.known.size === 0) return;
+    const ids = this.ordered();
     const radios = this.host.radios().map((config) => ({
       config,
       udn: this.host.controller(config.id)?.getSnapshot().udn ?? "",
     }));
-    const speakers: MultiroomSpeaker[] = this.devices.map((device) => ({
-      ...device,
-      radioId: matchSpeaker(device, radios),
-    }));
+    const listed = ids.flatMap((id) => this.known.get(id)?.devices ?? []);
+    const speakers = new Map<string, MultiroomSpeaker>();
+    // Saved speakers that answered: their group from their own nodes.
+    for (const radio of radios) {
+      const own = this.known.get(radio.config.id)?.own;
+      if (!own) continue;
+      const entry = listed.find((d) => matchSpeaker(d, [radio]) !== undefined);
+      const snapshot = this.host.controller(radio.config.id)?.getSnapshot();
+      const udn =
+        entry?.udn ||
+        multiroomUdn(radio.udn) ||
+        `${MULTIROOM_UDN_PREFIX}${identity(radio.config.id)}`;
+      speakers.set(key(udn), {
+        udn,
+        name: snapshot?.name || entry?.name || radio.config.name,
+        ip: entry?.ip || radio.config.host,
+        syncVersion: own.syncVersion || entry?.syncVersion || "",
+        groupId: own.groupId,
+        groupName: own.groupName,
+        role: own.role,
+        clientNumber: own.clientNumber,
+        stereo: entry?.stereo ?? { id: "", role: "INDEPENDENT", name: "" },
+        radioId: radio.config.id,
+      });
+    }
+    // Everyone else, from the lists (the selected speaker's first).
+    for (const device of listed) {
+      if (speakers.has(key(device.udn))) continue;
+      const radioId = matchSpeaker(device, radios);
+      if (radioId !== undefined && [...speakers.values()].some((s) => s.radioId === radioId)) {
+        continue;
+      }
+      speakers.set(key(device.udn), { ...device, radioId });
+    }
+    const all = [...speakers.values()];
     const groups: MultiroomGroup[] = [];
-    for (const speaker of speakers) {
+    for (const speaker of all) {
       if (speaker.role !== "SERVER" || !speaker.groupId) continue;
-      const clients = speakers
-        .filter((s) => s !== speaker && s.groupId === speaker.groupId)
+      const clients = all
+        .filter((s) => s !== speaker && s.role === "CLIENT" && s.groupId === speaker.groupId)
         .sort((a, b) => (a.clientNumber ?? 99) - (b.clientNumber ?? 99));
       groups.push({ id: speaker.groupId, name: speaker.groupName, server: speaker, clients });
     }
     const same =
       this.snapshot.status === "ready" &&
-      JSON.stringify([speakers, groups]) ===
+      JSON.stringify([all, groups]) ===
         JSON.stringify([this.snapshot.speakers, this.snapshot.groups]);
-    if (!same) this.update({ status: "ready", speakers, groups });
+    if (!same) this.update({ status: "ready", speakers: all, groups });
   }
 
   private update(patch: Partial<MultiroomSnapshot>): void {

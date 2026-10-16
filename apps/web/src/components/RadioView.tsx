@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/index.tsx";
 import { currentModeId } from "../radio/controller.ts";
 import { useMultiroom, useRadio, useRegistry } from "../radio/hooks.ts";
@@ -25,19 +25,24 @@ export function RadioView({ id }: { id: string }) {
   const [panel, setPanel] = useState<Panel>("player");
   const settingsButton = useRef<HTMLButtonElement>(null);
   const groupButton = useRef<HTMLButtonElement>(null);
+  const group = groups.find((g) => members(g).some((s) => s.radioId === id));
+  // A client plays its group's stream: the group is controlled through its server.
+  const client = group !== undefined && group.server.radioId !== id;
+  // A client reports no station name of its own; its server's playback is shown instead.
+  const server = useRadio(client ? group.server.radioId : undefined);
+  const serverController = server?.controller;
+  useEffect(() => serverController?.watch(), [serverController]);
   if (!radio) return null;
   const { snapshot, controller } = radio;
   const { text, tone } = statusLine(snapshot, t);
   const canPower = snapshot.connection === "online" && snapshot.power !== undefined;
-  const group = groups.find((g) => members(g).some((s) => s.radioId === id));
   // Multiroom speakers that aren't in a group yet can start one.
   const canGroup = speakers.some((s) => s.radioId === id) && !group;
-  // A client plays its group's stream: the group is controlled through its server.
-  const client = group !== undefined && group.server.radioId !== id;
   const playing = snapshot.connection === "online" && snapshot.power !== false;
+  const shown = client && server ? server.snapshot : snapshot;
   const status =
     client && playing
-      ? [t("groups.status.member", { group: group.name }), snapshot.play.name]
+      ? [t("groups.status.member", { group: group.name }), shown.play.name]
           .filter(Boolean)
           .join(" · ")
       : text;
@@ -124,7 +129,7 @@ export function RadioView({ id }: { id: string }) {
       ) : (
         <div className="radio-grid">
           <div className="card player">
-            <NowPlaying snapshot={snapshot} />
+            <NowPlaying snapshot={shown} />
             {snapshot.tuner && snapshot.power !== false && currentModeId(snapshot) === "FM" && (
               <Tuner tuner={snapshot.tuner} snapshot={snapshot} controller={controller} />
             )}

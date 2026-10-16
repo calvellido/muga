@@ -52,7 +52,11 @@ export function GroupMembership({ snapshot }: { snapshot: RadioSnapshot }) {
 
   function leave() {
     if (!group) return;
-    if (window.confirm(t("groups.leave.confirm", values))) void registry.multiroom.leave(id);
+    // A leader can't leave a group that goes on (ADR 0008): it ungroups everyone.
+    const question = leads
+      ? t("groups.dissolve.confirm", { name: group.name })
+      : t("groups.leave.confirm", values);
+    if (window.confirm(question)) void registry.multiroom.leave(id);
   }
 
   return (
@@ -74,7 +78,7 @@ export function GroupMembership({ snapshot }: { snapshot: RadioSnapshot }) {
           disabled={busy !== undefined}
           onClick={leave}
         >
-          {t("groups.leave")}
+          {leads ? t("groups.dissolve") : t("groups.leave")}
         </button>
       </div>
     </div>

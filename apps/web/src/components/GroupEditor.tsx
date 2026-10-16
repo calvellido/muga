@@ -43,8 +43,9 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
   const [name, setName] = useState(
     () => group?.name ?? nextGroupName(t, (n) => directory.nameTaken(n)),
   );
+  // The clients: the leader is fixed (ADR 0008).
   const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(group ? [group.server, ...group.clients].map((s) => key(s.udn)) : []),
+    () => new Set(group ? group.clients.map((s) => key(s.udn)) : []),
   );
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => title.current?.focus(), []);
@@ -54,20 +55,14 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
   const creating = !group;
   const others = speakers.filter((s) => key(s.udn) !== leaderKey);
   const trimmed = name.trim();
-  // A new group: the leader plus the speakers picked. An edit: the speakers picked.
-  const count = creating ? selected.size + 1 : selected.size;
-  const full = count >= MAX_GROUP_CLIENTS + 1;
+  const full = selected.size >= MAX_GROUP_CLIENTS;
   const mode = snapshot.modes.find((m) => m.key === snapshot.modeKey);
   // Only a new group needs the leader's source to be shareable; a group already plays one.
   const unshareable = creating && mode?.streamable === 0;
   const shareable = snapshot.modes.filter((m) => m.streamable === 1);
   const renamed = !creating && trimmed !== "" && trimmed !== group.name;
-  const leaderLeaves = !creating && !selected.has(leaderKey);
-  const next = leaderLeaves
-    ? [...group.clients, ...others].find((s) => selected.has(key(s.udn)))
-    : undefined;
   const working = busy !== undefined;
-  const current = group ? [group.server, ...group.clients].map((s) => key(s.udn)) : [];
+  const current = group ? group.clients.map((s) => key(s.udn)) : [];
   const membersChanged =
     selected.size !== current.length || current.some((udn) => !selected.has(udn));
   const canSubmit =
@@ -88,7 +83,6 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
   }
 
   function note(speaker: MultiroomSpeaker): string | undefined {
-    if (group && key(speaker.udn) === key(group.server.udn)) return t("groups.speaker.leads");
     if (speaker.groupId && speaker.groupId !== group?.id) {
       return t("groups.speaker.inGroup", { group: speaker.groupName });
     }
@@ -110,12 +104,12 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
     if (creating) {
       if (snapshot.power === false && !(await controller.setPower(true))) return;
       if (await directory.create(snapshot.config.id, [...selected], trimmed)) onDone();
-    } else if (await directory.edit(group.id, { name: trimmed, members: [...selected] })) {
+    } else if (await directory.edit(group.id, { name: trimmed, clients: [...selected] })) {
       onDone();
     }
   }
 
-  const listed = creating ? others : [leader, ...others];
+  const listed = others;
   return (
     <form className="group-editor" onSubmit={submit} aria-labelledby={`${id}-title`}>
       <div className="settings__header">
@@ -180,15 +174,15 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
         <fieldset className="speaker-picks" disabled={working}>
           <legend>{t("groups.speakers.label")}</legend>
           <p className="hint">{t("groups.speakers.hint", { max: MAX_GROUP_CLIENTS + 1 })}</p>
-          {creating && (
-            <label className="pick pick--fixed">
-              <input type="checkbox" checked disabled />
-              <span className="pick__text">
-                <span className="pick__name">{snapshot.name}</span>
-                <span className="pick__note">{t("groups.speaker.leads")}</span>
+          <label className="pick pick--fixed">
+            <input type="checkbox" checked disabled />
+            <span className="pick__text">
+              <span className="pick__name">{snapshot.name}</span>
+              <span className="pick__note">
+                {creating ? t("groups.speaker.leads") : t("groups.speaker.leadsFixed")}
               </span>
-            </label>
-          )}
+            </span>
+          </label>
           {listed.length === 0 && <p className="muted">{t("groups.speakers.none")}</p>}
           {listed.map((speaker) => {
             const udn = key(speaker.udn);
@@ -213,12 +207,7 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
           })}
         </fieldset>
 
-        {!creating && selected.size < 2 && <p className="hint">{t("groups.tooFew")}</p>}
-        {next && selected.size >= 2 && (
-          <p className="hint">
-            {t("groups.handOver", { name: leader.name, next: next.name || next.ip })}
-          </p>
-        )}
+        {!creating && selected.size === 0 && <p className="hint">{t("groups.tooFew")}</p>}
 
         <div className="form-actions">
           <button type="submit" className="button" disabled={!canSubmit}>
@@ -226,7 +215,7 @@ export function GroupEditor({ snapshot, controller, group, onClose, onDone }: Pr
               ? t("groups.applying")
               : creating
                 ? t("groups.create.submit")
-                : selected.size < 2
+                : selected.size === 0
                   ? t("groups.dissolve")
                   : t("groups.edit.submit")}
           </button>

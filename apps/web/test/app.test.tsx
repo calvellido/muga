@@ -53,9 +53,9 @@ function renderApp() {
     fetch: nodeFetch,
     controller: { activeIntervalMs: 100, navPollMs: 5, dabPollMs: 5 },
     multiroom: {
-      intervalMs: 200,
+      intervalMs: 5_000,
       settleMs: 0,
-      waits: { create: 0, add: 0, handOver: 0, destroy: 0 },
+      waits: { create: 0, add: 0, destroy: 0, streamable: 0 },
     },
   });
   render(
@@ -236,6 +236,19 @@ describe("App", () => {
       target: { value: "3" },
     });
     await waitFor(() => expect(kitchen.get("netRemote.sys.audio.volume")).toBe(3));
+
+    // Kitchen's own page: the radio has no station name as a client; the group's is shown.
+    await user.click(
+      within(screen.getByRole("list", { name: "Speakers in Group 1" })).getByRole("button", {
+        name: /Kitchen/,
+      }),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Kitchen" })).toBeTruthy();
+    expect(kitchen.get("netRemote.play.info.name")).toBe("");
+    expect(await screen.findByRole("heading", { level: 2, name: "Radio Muga" })).toBeTruthy();
+    expect(screen.getByText("Kitchen is playing with Group 1.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Open group" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Group 1" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Ungroup" }));
     expect(confirm).toHaveBeenCalledWith(

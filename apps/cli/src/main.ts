@@ -12,12 +12,12 @@ import {
   NODE_DEFS,
   NotificationSession,
   navigate,
+  readGroupState,
   readMultiroomDevices,
   readNavInfo,
   readNavPage,
   resetNav,
   type ScalarValue,
-  udnSuffix,
 } from "@muga/fsapi-core";
 import { startSimulatedHome, startSimulator } from "@muga/fsapi-sim";
 
@@ -29,7 +29,7 @@ Usage:
   muga list <host> <node> [--max n]   Read a list node (e.g. sys.caps.validModes)
   muga info <host>                    Name, version, power, source, volume, now playing
   muga browse <host> [key ...]        List the current source's menu, after entering folders by key
-  muga groups <host>                  Multiroom: this radio's group and every speaker it knows of
+  muga groups <host>                  Multiroom: this radio's group and the other speakers it knows of
   muga watch <host> [--seconds n]     Stream notifications (creates a session, see below)
   muga device <host>                  Fetch the /device document
   muga nodes [filter]                 Search the node catalog (offline)
@@ -209,36 +209,27 @@ async function browse(host?: string, keys: string[] = []) {
 
 async function groups(host?: string) {
   const radio = client(host);
-  const { values, errors } = await radio.getMultiple([
+  const own = await readGroupState(radio);
+  if (!own) fail("this radio has no multiroom");
+  const { values } = await radio.getMultiple([
     "netRemote.sys.info.friendlyName",
     "netRemote.sys.info.radioId",
-    "netRemote.sys.info.dmruuid",
-    "netRemote.multiroom.caps.protocolVersion",
     "netRemote.multiroom.caps.maxClients",
-    "netRemote.multiroom.group.state",
-    "netRemote.multiroom.group.name",
     "netRemote.multiroom.group.streamable",
-    "netRemote.multiroom.device.listAllVersion",
   ]);
+  // Real radios list the others they know of, not themselves, and update the list slowly.
   const devices = await readMultiroomDevices(radio);
-  // Which entry is this radio: its UDN ends like its radio id or its UPnP UDN (doc 05 §6.1).
-  const ids = [values["netRemote.sys.info.radioId"], values["netRemote.sys.info.dmruuid"]]
-    .map((id) => (id ? udnSuffix(id) : ""))
-    .filter(Boolean);
-  const self = devices.find((d) => ids.includes(udnSuffix(d.udn)));
-  const role = values["netRemote.multiroom.group.state"];
   const groupsById = Map.groupBy(
     devices.filter((d) => d.groupId),
     (d) => d.groupId,
   );
   const line = (d: (typeof devices)[number]) =>
-    `    ${(d.role === "CLIENT" ? `CLIENT ${d.clientNumber ?? "?"}` : d.role).padEnd(9)} ${d.name.padEnd(20)} ${d.ip.padEnd(15)} ${d.udn}${d === self ? "  (this radio)" : ""}${d.syncVersion ? `  protocol ${d.syncVersion}` : ""}`;
-  print({ radio: values, unavailable: Object.keys(errors), devices }, () =>
+    `    ${(d.role === "CLIENT" ? `CLIENT ${d.clientNumber ?? "?"}` : d.role).padEnd(9)} ${d.name.padEnd(20)} ${d.ip.padEnd(15)} ${d.udn}${d.syncVersion ? `  protocol ${d.syncVersion}` : ""}`;
+  print({ radio: { ...values, ...own }, devices }, () =>
     [
-      `${values["netRemote.sys.info.friendlyName"] ?? radio.baseUrl}: ${role ?? "?"}${role === "NO_GROUP" || role === undefined ? "" : ` of "${values["netRemote.multiroom.group.name"] ?? ""}"`}`,
-      `  source can be shared: ${values["netRemote.multiroom.group.streamable"] ?? "?"}, protocol ${values["netRemote.multiroom.caps.protocolVersion"] ?? "?"}, up to ${values["netRemote.multiroom.caps.maxClients"] ?? "?"} clients`,
-      `  radio id ${values["netRemote.sys.info.radioId"] ?? "?"}, UPnP UDN ${values["netRemote.sys.info.dmruuid"] || "?"}${self ? "" : ", not found in the speaker list below"}`,
-      `${devices.length} speakers (list version ${values["netRemote.multiroom.device.listAllVersion"] ?? "?"}):`,
+      `${values["netRemote.sys.info.friendlyName"] ?? radio.baseUrl}: ${own.role}${own.role === "NO_GROUP" ? "" : ` of "${own.groupName}"${own.clientNumber === undefined ? "" : ` (client ${own.clientNumber})`}`}`,
+      `  source can be shared: ${values["netRemote.multiroom.group.streamable"] ?? "?"}, protocol ${own.syncVersion || "?"}, up to ${values["netRemote.multiroom.caps.maxClients"] ?? "?"} clients, radio id ${values["netRemote.sys.info.radioId"] ?? "?"}`,
+      `${devices.length} other speakers it knows of (list version ${own.listVersion ?? "?"}; it can lag behind changes):`,
       ...[...groupsById].flatMap(([, members]) => [
         `  ${members[0]?.groupName || "(unnamed group)"}`,
         ...[...members]
