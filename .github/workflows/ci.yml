@@ -36,6 +36,18 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Every pull request raises the version and describes it in CHANGELOG.md (ADR 0015).
+      - name: Version
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REF"
+            pnpm version:check --base "origin/$BASE_REF"
+          else
+            pnpm version:check
+          fi
+
       - name: Check (codegen, typecheck, lint, tests)
         run: pnpm check
 

@@ -114,6 +114,7 @@ pnpm muga browse 127.0.0.1:8099 2 0  # the current source's menu, after entering
 pnpm muga groups 127.0.0.1:8099      # multiroom: every speaker on the network and its group
 pnpm muga nodes multiroom            # search the catalog offline
 pnpm muga --help
+pnpm bump patch                      # in every pull request: patch for a fix, minor for a feature
 ```
 
 Using the library:
@@ -145,7 +146,7 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 
 </details>
 
-Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
+Every pull request raises the version with `pnpm bump` and describes the change in [`CHANGELOG.md`](CHANGELOG.md); CI checks both, and merging publishes the release ([ADR 0015](docs/adr/0015-versions-and-releases.md)). Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
 
 ## 📻 Tested radios
 

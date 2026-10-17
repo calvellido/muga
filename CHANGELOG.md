@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 (2026-10-17)
+
+- Every change to Muga now comes with its own version and release, so the version shown in Muga settings tells exactly what you have.
+
 ## 1.0.0 (2026-10-16)
 
 The first release. Muga controls the Frontier Silicon internet radios that the UNDOK app controls (Roberts, Ruark, Silvercrest, Eliteline, Hama, Medion and many more) from a browser, with no account, no cloud and no server of its own.

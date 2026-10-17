@@ -12,6 +12,7 @@ import {
 } from "../src/preferences.tsx";
 import { RegistryContext } from "../src/radio/hooks.ts";
 import { RadioRegistry, type StorageLike } from "../src/radio/registry.ts";
+import { APP_VERSION } from "../src/version.ts";
 
 afterEach(() => {
   cleanup();
@@ -73,7 +74,7 @@ describe("Muga settings", () => {
     expect(screen.getByRole("heading", { name: "No speakers yet" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Muga settings" }));
-    expect(screen.getByText("Muga 1.0.0")).toBeTruthy();
+    expect(screen.getByText(`Muga ${APP_VERSION}`)).toBeTruthy();
     const language = screen.getByRole("group", { name: "Language" });
     await user.click(within(language).getByRole("button", { name: "Español" }));
     expect(await screen.findByRole("heading", { name: "Ajustes de Muga" })).toBeTruthy();
