@@ -146,7 +146,7 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 
 </details>
 
-Every pull request raises the version with `pnpm bump` and describes the change in [`CHANGELOG.md`](CHANGELOG.md); CI checks both, and merging publishes the release ([ADR 0015](docs/adr/0015-versions-and-releases.md)). Decisions are recorded in [`docs/adr`](docs/adr). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
+Every pull request raises the version with `pnpm bump` and describes the change in [`CHANGELOG.md`](CHANGELOG.md); CI checks both, and merging publishes the release ([ADR 0015](docs/adr/0015-versions-and-releases.md)). Decisions are recorded in [`docs/adr`](docs/adr), and changes to the radios' firmware that would help are in [Radio firmware wishes](docs/radio-firmware-wishes.md). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
 
 ## 📻 Tested radios
 
@@ -154,7 +154,7 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 
 | Radio | Firmware | Notes |
 | --- | --- | --- |
-| Eliteline ICD2018 | V2.13.21c | FM and DAB (FM can be shared with a group), Bluetooth as a source, clock and menu-language settings |
+| Eliteline ICD2018 | V2.13.21c | FM and DAB (FM can be shared with a group), CD (the radio reports no track details), Bluetooth as a source, clock and menu-language settings |
 | Ruark MRx | V2.14.35 | TIDAL, Deezer and Amazon Music sources, Bluetooth as a source, equalizer with loudness, streaming quality |
 | Silvercrest SMRS35A1 | V2.11.11 | Internet radio, Spotify, AUX in |
 | Silvercrest SMRS30A1 | V2.11.11 | Internet radio, Spotify, AUX in |
