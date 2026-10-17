@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 (2026-10-17)
+
+- **Check for updates**, in each speaker's settings ("About this speaker"): shows what the radio found the last time it checked for software updates by itself, such as no update, an update available or a failed check. Muga doesn't ask the radio to check or to update.
+
 ## 1.0.2 (2026-10-17)
 
 - **Settings:** the clock card's time source and time zone lists no longer stick out of the card on wide screens. Some radios, such as the ICD2018, have long time zone names.
