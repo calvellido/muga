@@ -154,6 +154,13 @@ export interface ClockState {
   readAt: number;
 }
 
+/** What the radio found at its own last check for software updates (`sys.isu.*`). */
+export type UpdateCheck =
+  | { status: "checking" }
+  | { status: "available"; version: string; important: boolean; summary: string }
+  | { status: "updating"; progress: number }
+  | { status: "none" | "notChecked" | "inProgress" | "failed" | "unsupported" | "error" };
+
 export interface SettingsState {
   status: "idle" | "loading" | "ready" | "error";
   device: DeviceInfo | undefined;
@@ -170,6 +177,8 @@ export interface SettingsState {
         value: "LOW" | "NORMAL" | "HIGH";
       }
     | undefined;
+  /** The last "Check for updates" result; undefined until it's pressed. */
+  update: UpdateCheck | undefined;
 }
 
 /** A multiroom group's volumes, read from its server, in the server's volume steps. */

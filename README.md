@@ -40,7 +40,7 @@ Muga isn't affiliated with or endorsed by Frontier Smart or any radio vendor.
 - 🏠 **Multiroom groups**: group speakers so they play the same thing in sync, with a group volume and a volume for each speaker. Add and remove speakers, rename, put the whole group in standby, or ungroup.
 - 🔎 **Finds your speakers**: "Find speakers" looks for radios on your network, so there's no IP address to type. And when your router gives a speaker a new address, Muga finds it again.
 - ⚙️ **Settings**: name, sleep timer, equalizer, the radio's own menu language, clock and time zone, streaming quality.
-- ℹ️ **Device info**: model, firmware, network and Wi-Fi signal.
+- ℹ️ **Device info**: model, firmware, network and Wi-Fi signal, and whether the radio has found a software update.
 - 📱 **Phone and desktop**, light or dark, and it installs as an app.
 - 🌍 **English and Spanish**: your browser's language, or the one you pick in Muga settings.
 - 🔒 **No account, no cloud, no tracking.** Your browser talks straight to your radios on your own network.

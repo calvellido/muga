@@ -222,3 +222,43 @@ describe("SettingsManager", () => {
     });
   });
 });
+
+describe("software updates", () => {
+  it("reads what the radio found at its last check, without asking it to check", async () => {
+    const radio = await loaded();
+    const check = async () => {
+      await radio.controller.settings.checkUpdate();
+      return settingsOf(radio).update;
+    };
+    expect(await check()).toEqual({ status: "notChecked" });
+
+    radio.sim.set("netRemote.sys.isu.state", 3);
+    expect(await check()).toEqual({ status: "none" });
+
+    radio.sim.set("netRemote.sys.isu.state", 2);
+    radio.sim.set("netRemote.sys.isu.version", "V2.14.40");
+    radio.sim.set("netRemote.sys.isu.mandatory", 1);
+    radio.sim.set("netRemote.sys.isu.summary", "Bug fixes");
+    expect(await check()).toEqual({
+      status: "available",
+      version: "V2.14.40",
+      important: true,
+      summary: "Bug fixes",
+    });
+
+    radio.sim.set("netRemote.sys.isu.softwareUpdateProgress", 40);
+    expect(await check()).toEqual({ status: "updating", progress: 40 });
+
+    radio.sim.set("netRemote.sys.isu.softwareUpdateProgress", 0);
+    radio.sim.set("netRemote.sys.isu.state", 4);
+    expect(await check()).toEqual({ status: "failed" });
+    // Never asked to check (CHECK_FOR_UPDATE) or to update.
+    expect(radio.sim.get("netRemote.sys.isu.control")).toBe(0);
+  });
+
+  it("says when the radio doesn't report updates", async () => {
+    const radio = await loaded({ sim: { profile: { missingNodes: ["netRemote.sys.isu.state"] } } });
+    await radio.controller.settings.checkUpdate();
+    expect(settingsOf(radio).update).toEqual({ status: "unsupported" });
+  });
+});

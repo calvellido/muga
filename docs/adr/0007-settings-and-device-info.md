@@ -30,6 +30,15 @@ Date: 2026-10-15. Status: accepted.
 4. **Device info shows the network name.** Muga decodes `sys.net.wlan.connectedSSID`, a byte array, into the name, as UNDOK does. (Corrected 2026-10-16: this first said UNDOK showed the name wrongly. It shows it correctly; the tested network's name had been mistaken for an error.) The MAC address shown is the wired one when Ethernet is enabled. The address shown is the one Muga uses to reach the radio.
 5. **Time zones as the radio lists them.** Zones without a label show their offset ("UTC−11:30"). Labelled ones get the offset in front ("UTC+02:00 · Atenas, Cairo"). The current zone is found by label when the radio stores one, else by offset.
 6. **Left for later:** factory reset (Phase 5, behind strong confirmation), external audio delay (its units are unknown), and "keep network connected" (a hidden dialog in UNDOK).
+7. **"Check for updates" only reads** (added 2026-10-17). In "About this speaker", it reads `sys.isu.state`, `version`, `mandatory`, `summary` and `softwareUpdateProgress`, and says what the radio found at its own last check:
+   - no update;
+   - not checked since it last started;
+   - checking right now;
+   - an update available, possibly marked important, with its notes;
+   - updating, with progress;
+   - the last check failed.
+
+   It never writes `sys.isu.control`. Asking the radio to check (`CHECK_FOR_UPDATE`) makes it contact its update server, and installing (`UPDATE_FIRMWARE`) isn't planned. On 2026-10-17 an ICD2018 and two Silvercrests reported no update at their last check, and a Ruark MRx hadn't checked since it started. The firmware string stays shown as the radio reports it.
 
 ## Checked on real radios
 
