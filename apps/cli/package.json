@@ -1,6 +1,6 @@
 {
   "name": "@muga/cli",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Command-line FSAPI tool: read/write nodes, list, watch notifications, run the simulator",
   "license": "MIT",

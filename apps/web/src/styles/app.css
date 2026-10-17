@@ -1091,6 +1091,8 @@ input {
 
 .settings-card {
   display: grid;
+  /* A column that can shrink: a select is otherwise as wide as its longest option. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-content: start;
 }
@@ -1308,6 +1310,7 @@ input {
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 
