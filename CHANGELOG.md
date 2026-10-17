@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2026-10-17)
+
+- **Docs:** why a CD shows no track details, and changes to the radios' firmware that would help Muga (HTTPS for every browser, and CD details).
+
 ## 1.1.0 (2026-10-17)
 
 - **Check for updates**, in each speaker's settings ("About this speaker"): shows what the radio found the last time it checked for software updates by itself, such as no update, an update available or a failed check. Muga doesn't ask the radio to check or to update.
