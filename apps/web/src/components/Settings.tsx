@@ -10,7 +10,7 @@ import {
   SLEEP_MINUTES,
   zoneLabel,
 } from "../radio/settings.ts";
-import type { ClockSource, RadioSnapshot } from "../radio/types.ts";
+import type { ClockSource, RadioSnapshot, UpdateCheck } from "../radio/types.ts";
 import { Icon } from "./Icon.tsx";
 
 interface Props {
@@ -89,7 +89,7 @@ export function Settings({ snapshot, controller, onClose }: Props & { onClose():
           <QualityCard snapshot={snapshot} controller={controller} />
           <ClockCard snapshot={snapshot} controller={controller} />
           <LanguageCard snapshot={snapshot} controller={controller} />
-          <DeviceCard snapshot={snapshot} />
+          <DeviceCard snapshot={snapshot} controller={controller} />
         </div>
       )}
     </section>
@@ -428,9 +428,9 @@ function LanguageCard({ snapshot, controller }: Props) {
   );
 }
 
-function DeviceCard({ snapshot }: { snapshot: RadioSnapshot }) {
+function DeviceCard({ snapshot, controller }: Props) {
   const t = useT();
-  const device = snapshot.settings.device;
+  const { device, update } = snapshot.settings;
   if (!device) return null;
   const rows: [MessageId, string][] = [
     ["settings.device.model", device.model],
@@ -473,6 +473,42 @@ function DeviceCard({ snapshot }: { snapshot: RadioSnapshot }) {
           </div>
         )}
       </dl>
+      <div className="update-check">
+        <button
+          type="button"
+          className="button button--ghost button--small"
+          disabled={update?.status === "checking" || snapshot.connection !== "online"}
+          onClick={() => void controller.settings.checkUpdate()}
+        >
+          {t(update?.status === "checking" ? "settings.update.checking" : "settings.update.check")}
+        </button>
+        <UpdateResult update={update} />
+      </div>
     </div>
+  );
+}
+
+/** What the radio found at its own last check: Muga only reads it (ADR 0007). */
+function UpdateResult({ update }: { update: UpdateCheck | undefined }) {
+  const t = useT();
+  if (!update || update.status === "checking") return null;
+  if (update.status === "available") {
+    return (
+      <div role="status">
+        <p>
+          {t(update.important ? "settings.update.important" : "settings.update.available", {
+            version: update.version,
+          })}
+        </p>
+        {update.summary && <p className="hint">{update.summary}</p>}
+      </div>
+    );
+  }
+  return (
+    <p role="status">
+      {update.status === "updating"
+        ? t("settings.update.updating", { progress: update.progress })
+        : t(`settings.update.${update.status}`)}
+    </p>
   );
 }

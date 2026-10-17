@@ -1189,6 +1189,16 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
+.update-check {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.update-check p {
+  margin: 0;
+}
+
 .facts {
   display: grid;
   gap: 10px;

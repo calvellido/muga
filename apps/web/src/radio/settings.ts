@@ -6,7 +6,14 @@ import {
   type ScalarPath,
 } from "@muga/fsapi-core";
 import { LatestWins } from "./latest.ts";
-import type { ClockSource, ClockState, EqBand, RadioContext, SettingsState } from "./types.ts";
+import type {
+  ClockSource,
+  ClockState,
+  EqBand,
+  RadioContext,
+  SettingsState,
+  UpdateCheck,
+} from "./types.ts";
 
 /** UNDOK's sleep timer choices, in minutes (`sleep_timer_integer_values_array`). */
 export const SLEEP_MINUTES = [15, 30, 45, 60, 90, 120] as const;
@@ -46,6 +53,15 @@ const CLOCK_NODES = [
   "netRemote.sys.clock.localTime",
 ] as const satisfies readonly ScalarPath[];
 
+/** What the radio knows about software updates (doc 06 §1.1). */
+const UPDATE_NODES = [
+  "netRemote.sys.isu.state",
+  "netRemote.sys.isu.version",
+  "netRemote.sys.isu.mandatory",
+  "netRemote.sys.isu.summary",
+  "netRemote.sys.isu.softwareUpdateProgress",
+] as const satisfies readonly ScalarPath[];
+
 /** Custom EQ band values; only bands 0–4 have nodes (doc 06 §3.2). */
 const EQ_PARAMS = [
   "netRemote.sys.audio.eqCustom.param0",
@@ -77,6 +93,7 @@ export function initialSettings(): SettingsState {
     clock: undefined,
     language: undefined,
     quality: undefined,
+    update: undefined,
   };
 }
 
@@ -147,9 +164,54 @@ export class SettingsManager {
     return this.loading;
   }
 
+  /**
+   * What the radio found the last time it checked for software updates by itself. Read only:
+   * asking it to check (`sys.isu.control`) makes it contact its update server, which is left for
+   * later (ADR 0007).
+   */
+  async checkUpdate(): Promise<void> {
+    this.set({ update: { status: "checking" } });
+    let update: UpdateCheck;
+    try {
+      const { values } = await this.ctx.client.getMultiple(UPDATE_NODES);
+      const state = values["netRemote.sys.isu.state"];
+      const version = values["netRemote.sys.isu.version"]?.trim() ?? "";
+      const progress = values["netRemote.sys.isu.softwareUpdateProgress"] ?? 0;
+      if (progress > 0) update = { status: "updating", progress };
+      else if (state === "UPDATE_AVAILABLE" && version) {
+        update = {
+          status: "available",
+          version,
+          important: values["netRemote.sys.isu.mandatory"] === "YES",
+          summary: values["netRemote.sys.isu.summary"]?.trim() ?? "",
+        };
+      } else {
+        const known = {
+          IDLE: "notChecked",
+          CHECK_IN_PROGRESS: "inProgress",
+          UPDATE_AVAILABLE: "none",
+          UPDATE_NOT_AVAILABLE: "none",
+          CHECK_FAILED: "failed",
+        } as const;
+        // An unknown number is a state this catalog doesn't name.
+        update = {
+          status:
+            state === undefined
+              ? "unsupported"
+              : typeof state === "string"
+                ? known[state]
+                : "error",
+        };
+      }
+    } catch {
+      update = { status: "error" };
+    }
+    this.set({ update });
+  }
+
   private async read(): Promise<void> {
     const { client } = this.ctx;
-    this.set({ status: "loading" });
+    this.set({ status: "loading", update: undefined });
     try {
       const device = (await client.getMultiple(DEVICE_NODES)).values;
       const audio = (await client.getMultiple(AUDIO_NODES)).values;

@@ -33,6 +33,7 @@ const SAMPLE_VALUES = {
   mark: "▶",
   language: "English",
   version: "1.0.0",
+  progress: 45,
 };
 
 describe("messages", () => {
