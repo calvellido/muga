@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 (2026-10-17)
+
+- **Settings:** the clock card's time source and time zone lists no longer stick out of the card on wide screens. Some radios, such as the ICD2018, have long time zone names.
+
 ## 1.0.1 (2026-10-17)
 
 - Every change to Muga now comes with its own version and release, so the version shown in Muga settings tells exactly what you have.
