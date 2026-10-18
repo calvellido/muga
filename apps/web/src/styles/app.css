@@ -1340,6 +1340,11 @@ input {
   color: var(--text-muted);
 }
 
+.hint a {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
 .form-error {
   padding: 10px 12px;
   border-radius: var(--r-sm);

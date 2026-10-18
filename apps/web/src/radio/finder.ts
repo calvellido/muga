@@ -32,6 +32,11 @@ export interface FinderOptions {
   answers?: (host: string) => Promise<boolean>;
   /** Where to look instead of the usual ranges (tests). */
   ranges?: () => Promise<FinderRange[]>;
+  /**
+   * The ranges an HTTPS proxy at home reaches, undefined without one (ADR 0017). Through a proxy
+   * the browser can't check for a router, so the proxy says where to look.
+   */
+  proxyRanges?: () => Promise<string[] | undefined>;
 }
 
 /** Any HTTP reply counts, readable or not: `no-cors` resolves for every server that answered. */
@@ -114,6 +119,8 @@ export class SpeakerFinder {
     if (this.options.ranges) return this.options.ranges();
     const saved = [...new Set(this.host.radios().flatMap((r) => subnetOf(r.host) ?? []))];
     if (saved.length > 0) return saved.map((subnet) => ({ subnet, hosts: subnetHosts(subnet) }));
+    const proxied = await this.options.proxyRanges?.();
+    if (proxied) return proxied.map((subnet) => ({ subnet, hosts: subnetHosts(subnet) }));
     const answers = this.options.answers ?? anyAnswer;
     const live = await Promise.all(
       COMMON_SUBNETS.map(

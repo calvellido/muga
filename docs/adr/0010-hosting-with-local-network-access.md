@@ -35,7 +35,7 @@ On 2026-10-16, a `/muga/` build was served over HTTPS and opened in Chrome 155 (
 
    A connection error, and an unreachable speaker, mention the browser instead of the radio in those cases. Plain-HTTP pages (served at home, or `localhost`) are unaffected.
 4. **Pages is deployed by a workflow on every push to `main`** (`.github/workflows/pages.yml`), with actions pinned like CI's. Pages has to be enabled once in the repository settings, with "GitHub Actions" as the source.
-5. **iPhone and iPad:** the website can't reach the radios there, so the app says so. The options are to serve Muga at home over plain HTTP (README), and later a native wrapper or the hub. ADR 0012 has where Safari and Firefox stand.
+5. **iPhone and iPad:** the website can't reach the radios there, so the app says so. The options are to serve Muga at home over plain HTTP (README), and later a native wrapper or the hub. ADR 0012 has where Safari and Firefox stand, and ADR 0017 a proxy at home that gets them there.
 
 ## Consequences
 

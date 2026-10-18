@@ -1,0 +1,34 @@
+# Muga's HTTPS proxy for the radios (docs/proxy/README.md, ADR 0017).
+#
+# Change two things before using it:
+#   - radios.example.com: the name your certificate is for, pointing to this machine's local address;
+#   - 192.168.1: your network's address range, in the regular expression (as 192\.168\.1) and in
+#     the /muga-proxy answer.
+#
+# The certificate comes from elsewhere (on Home Assistant, the DuckDNS add-on, in /ssl), so Caddy
+# doesn't request certificates itself.
+{
+	auto_https disable_certs
+}
+
+radios.example.com {
+	tls /ssl/fullchain.pem /ssl/privkey.pem
+
+	# Tells Muga this is its proxy, and which addresses it reaches.
+	handle /muga-proxy {
+		header Access-Control-Allow-Origin *
+		header Content-Type application/json
+		respond `{"muga":1,"ranges":["192.168.1"]}`
+	}
+
+	# /<radio IP>/fsapi/... and /<radio IP>/device go to that radio, on port 80. The radios'
+	# own CORS header (Access-Control-Allow-Origin: *) passes through unchanged.
+	@radio path_regexp radio ^/(192\.168\.1\.(?:25[0-4]|2[0-4]\d|1\d\d|[1-9]\d?))/(fsapi/.*|device)$
+	handle @radio {
+		rewrite * /{re.radio.2}?{query}
+		reverse_proxy {re.radio.1}:80
+	}
+
+	# Anything else, such as the router's pages or other addresses, is refused.
+	respond 404
+}

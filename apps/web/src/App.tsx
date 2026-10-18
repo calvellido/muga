@@ -7,6 +7,7 @@ import { Icon } from "./components/Icon.tsx";
 import { DiscoveredSpeakers, RadioList } from "./components/RadioList.tsx";
 import { RadioView } from "./components/RadioView.tsx";
 import { useT } from "./i18n/index.tsx";
+import { useOptionalPreferences } from "./preferences.tsx";
 import {
   useMediaQuery,
   useMultiroom,
@@ -72,6 +73,10 @@ export function App() {
     else if (wasOpen.current) switcherRef.current?.focus();
     wasOpen.current = drawerOpen;
   }, [drawerOpen]);
+
+  // Muga settings may name a proxy that reaches the radios (ADR 0017).
+  const proxy = useOptionalPreferences()?.proxy || undefined;
+  useEffect(() => registry.setProxy(proxy), [registry, proxy]);
 
   useEffect(() => {
     registry.start();

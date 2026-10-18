@@ -7,15 +7,18 @@ import {
   type Messages,
   SUPPORTED_LOCALES,
 } from "./i18n/index.tsx";
+import { proxyOrigin } from "./radio/proxy.ts";
 import type { StorageLike } from "./radio/registry.ts";
 
 /** Muga's own settings (ADR 0014), kept in this browser. "auto" follows the browser or device. */
 export interface Preferences {
   language: "auto" | Locale;
   theme: "auto" | "light" | "dark";
+  /** An HTTPS proxy at home that reaches the radios (ADR 0017), as `https://host`; "" for none. */
+  proxy: string;
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { language: "auto", theme: "auto" };
+export const DEFAULT_PREFERENCES: Preferences = { language: "auto", theme: "auto", proxy: "" };
 const KEY = "muga.preferences.v1";
 const THEMES = ["auto", "light", "dark"] as const;
 
@@ -27,7 +30,8 @@ export function readPreferences(storage: StorageLike | undefined): Preferences {
     );
     const language = SUPPORTED_LOCALES.find((l) => l === saved.language) ?? "auto";
     const theme = THEMES.find((t) => t === saved.theme) ?? "auto";
-    return { language, theme };
+    const proxy = typeof saved.proxy === "string" ? (proxyOrigin(saved.proxy) ?? "") : "";
+    return { language, theme, proxy };
   } catch {
     return DEFAULT_PREFERENCES;
   }
@@ -84,6 +88,11 @@ export function usePreferences(): PreferencesValue {
   const value = useContext(PreferencesContext);
   if (!value) throw new Error("usePreferences needs a PreferencesProvider");
   return value;
+}
+
+/** The preferences when there's a PreferencesProvider (always, except in some tests). */
+export function useOptionalPreferences(): Preferences | undefined {
+  return useContext(PreferencesContext)?.preferences;
 }
 
 export interface InitialPreferences {

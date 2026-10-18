@@ -51,7 +51,7 @@ From `https://muga.calvellido.es/`, only Chrome and Edge reach the radios, throu
 
 ## Decisions
 
-1. **Wait for the browsers.** Nothing is built around them. The workaround stays as in ADR 0010: Muga served at home over plain HTTP, which works in Safari, on iPhone and iPad, and in Firefox.
+1. **Wait for the browsers.** Nothing is built around them. The workaround stays as in ADR 0010: Muga served at home over plain HTTP, which works in Safari, on iPhone and iPad, and in Firefox. (Since 2026-10-18, ADR 0017 adds another: an HTTPS proxy at home, set in Muga settings.)
 2. **Muga keeps asking for Chrome's permission name**, `local-network-access`, to tell whether an https page can reach the radios. Firefox knows `local-network` but still blocks the requests. Asking for that name would tell Firefox users to allow a prompt that never comes.
 3. **The README says where Muga works**, in a few lines. The details stay here.
 4. **The README mentions Firefox's setting**, as a trade-off: what to change, that it lowers a protection for every site, and to keep it to a profile for Muga. Muga can't read the setting, so it still counts Firefox as blocked. Its notice still shows there, and the README says it can be ignored.

@@ -18,8 +18,8 @@ function browserStorage(): StorageLike | undefined {
 registerSW({ immediate: true });
 
 const storage = browserStorage();
-const registry = new RadioRegistry({ storage });
 const preferences = await loadPreferences(storage);
+const registry = new RadioRegistry({ storage, proxy: preferences.preferences.proxy || undefined });
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element");
