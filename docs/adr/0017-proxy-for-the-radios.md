@@ -18,7 +18,7 @@ On 2026-10-18, on a Home Assistant Green (Home Assistant 2026.10.2):
   - the router's pages, other paths and addresses outside the range got 404;
   - an empty address got 502 after 3 s.
 - **On an iPhone,** in Safari on the published site, a speaker connected as `https://<name>/<radio IP>/fsapi` worked: playback, volume and browsing.
-- **Renewals:** Caddy reads certificate files only when it starts. A Home Assistant automation restarts it weekly, and DuckDNS renews 30 days before expiry.
+- **Renewals:** Caddy reads certificate files only when it starts, and DuckDNS renews 30 days before expiry, while the old certificate stays valid. Home Assistant's Certificate Expiry integration watches the certificate Caddy serves. A daily automation restarts Caddy when that certificate expires within 29 days, which means a renewed one is waiting. It leaves a notification if, after the restart, the certificate still expires within 10 days.
 
 ## Decisions
 

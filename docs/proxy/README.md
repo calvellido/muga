@@ -27,20 +27,45 @@ This is the setup Muga was tested with, on a Home Assistant Green.
    - Copy [Caddyfile](Caddyfile) to `/addon_configs/c80c7555_caddy-2/Caddyfile`. Any add-on that can write that folder works: **Terminal & SSH**, **Samba share** or **Studio Code Server**.
    - In it, change `radios.example.com` to your subdomain, and `192.168.1` to your network's range, in both places.
    - Restart the add-on.
-3. **A weekly restart.** Caddy reads the certificate only when it starts, and DuckDNS renews it 30 days before it expires. An automation that restarts Caddy every week keeps the certificate fresh:
+3. **A restart after each renewal.** Caddy reads the certificate only when it starts, and DuckDNS renews it 30 days before it expires. The old one stays valid until then, so nothing breaks in between, but Caddy has to be restarted to serve the new one.
+   - Add the **Certificate Expiry** integration (Settings → Devices & services) for your name, on port 443. Its sensor shows when the certificate Caddy serves expires.
+   - Add this automation, with your sensor's name. Every day, it restarts Caddy if the served certificate expires within 29 days, which means a renewed one is waiting. If it still expires within 10 days afterwards, the renewal isn't working, and it leaves a notification.
 
    ```yaml
-   alias: Restart Caddy weekly (Muga)
+   alias: Restart Caddy after a certificate renewal (Muga)
    triggers:
      - trigger: time
        at: "04:30:00"
    conditions:
-     - condition: time
-       weekday: [mon]
+     - condition: template
+       value_template: >-
+         {{ as_timestamp(states('sensor.myradios_duckdns_org_cert_expiry'), 0)
+            - as_timestamp(now()) < 29 * 86400 }}
    actions:
      - action: hassio.addon_restart
        data:
          addon: c80c7555_caddy-2
+     - delay:
+         seconds: 30
+     - action: homeassistant.update_entity
+       target:
+         entity_id: sensor.myradios_duckdns_org_cert_expiry
+     - delay:
+         seconds: 10
+     - if:
+         - condition: template
+           value_template: >-
+             {{ as_timestamp(states('sensor.myradios_duckdns_org_cert_expiry'), 0)
+                - as_timestamp(now()) < 10 * 86400 }}
+       then:
+         - action: persistent_notification.create
+           data:
+             notification_id: muga_proxy_certificate
+             title: Muga proxy certificate
+             message: >-
+               The proxy's certificate expires on
+               {{ states('sensor.myradios_duckdns_org_cert_expiry') }}, and Caddy found no
+               renewed one. Check the Duck DNS add-on's log.
    mode: single
    ```
 
