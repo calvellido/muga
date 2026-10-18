@@ -34,6 +34,8 @@ const SAMPLE_VALUES = {
   language: "English",
   version: "1.0.0",
   progress: 45,
+  proxy: "https://radios.example.com",
+  ranges: "192.168.1.x",
 };
 
 describe("messages", () => {

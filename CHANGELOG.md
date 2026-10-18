@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 (2026-10-18)
+
+- **iPhone, iPad, Safari and Firefox,** through a proxy at home. A small HTTPS proxy on your network, such as Caddy on a Home Assistant box, reaches the radios for browsers that can't. Set it up with the guide in `docs/proxy`, then enter its address in Muga settings, under "Proxy for the radios". Everything else works as usual: connecting by IP address, finding speakers, groups.
+
 ## 1.1.1 (2026-10-17)
 
 - **Docs:** why a CD shows no track details, and changes to the radios' firmware that would help Muga (HTTPS for every browser, and CD details).

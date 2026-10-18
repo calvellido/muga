@@ -28,7 +28,7 @@ describe("local network access", () => {
     access = "blocked";
     renderApp();
     expect(screen.getByText("This browser can't reach your radios from this page")).toBeTruthy();
-    expect(screen.getByText(/On an iPhone or iPad no browser allows it yet/)).toBeTruthy();
+    expect(screen.getByText(/set up a proxy at home in Muga settings/)).toBeTruthy();
   });
 
   it("explains how to turn the permission back on", () => {

@@ -66,10 +66,10 @@ In Safari or Firefox, and on an iPhone or iPad, see [Where it works](#-where-it-
 | Browser | From muga.calvellido.es | Served at home over plain HTTP |
 | --- | --- | --- |
 | Chrome and Edge, on a computer or Android | ✅ Installs as an app | ✅ |
-| Firefox | ⚠️ With a setting changed, see below | ✅ |
-| Safari, and every browser on iPhone and iPad | ❌ Not yet | ✅ Add it to the home screen |
+| Firefox | ✅ With a [proxy at home](docs/proxy/README.md), or ⚠️ with a setting changed (below) | ✅ |
+| Safari, and every browser on iPhone and iPad | ✅ With a [proxy at home](docs/proxy/README.md) | ✅ Add it to the home screen |
 
-Radios answer over plain HTTP, and browsers block plain HTTP from secure (https) websites. Chrome and Edge make an exception for devices on your own network, once you allow it. Safari and Firefox are working towards the same. Until then, Muga tells you so, and you can serve it at home instead: see "On a phone at home" below. Details are in [ADR 0012](docs/adr/0012-browsers-without-local-network-access.md).
+Radios answer over plain HTTP, and browsers block plain HTTP from secure (https) websites. Chrome and Edge make an exception for devices on your own network, once you allow it. Safari and Firefox are working towards the same. Until then, a small HTTPS proxy at home, such as Caddy on a Home Assistant box, reaches the radios for them: set it up with [this guide](docs/proxy/README.md) and enter its address in Muga settings. Or serve Muga at home instead: see "On a phone at home" below. Details are in [ADR 0012](docs/adr/0012-browsers-without-local-network-access.md).
 
 > [!CAUTION]
 > **Firefox, if you accept the trade-off:** open `about:config`, set `security.mixed_content.block_active_content` to `false`, and allow local network access when Firefox asks. This turns off a protection for every website, not only Muga, so it's best kept to a separate Firefox profile used only for Muga (`about:profiles`). Muga may still say the browser can't reach your radios; you can ignore that.
@@ -172,8 +172,9 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 - ✅ English and Spanish, and Muga settings for the language and theme
 - 🔜 Firmware updates and a carefully guarded factory reset
 - ⏸️ Stereo pairs and Bluetooth settings, for radios that support them (none of the tested ones does)
-- ⏳ Safari, Firefox and the iPhone from the website, once their browsers allow it
-- 💭 A small hub on your network, for live updates, and the iPhone over HTTPS
+- ✅ Safari, Firefox and the iPhone from the website, through a proxy at home
+- ⏳ The same without a proxy, once their browsers allow it
+- 💭 A small hub on your network, for live updates
 
 ## 🙏 Acknowledgements
 

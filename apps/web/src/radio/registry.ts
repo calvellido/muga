@@ -6,6 +6,7 @@ import {
   type MultiroomDirectoryOptions,
   type MultiroomGroup,
 } from "./multiroom.ts";
+import { type ProxyInfo, proxiedFetch, readProxyInfo } from "./proxy.ts";
 import type { RadioConfig } from "./types.ts";
 
 export interface StorageLike {
@@ -23,9 +24,11 @@ export interface RegistrySnapshot {
 export interface RadioRegistryOptions {
   storage?: StorageLike | undefined;
   fetch?: FetchLike;
+  /** An HTTPS proxy at home to reach radios through (ADR 0017); `setProxy` changes it. */
+  proxy?: string | undefined;
   controller?: Omit<RadioControllerOptions, "fetch">;
   multiroom?: MultiroomDirectoryOptions;
-  finder?: Omit<FinderOptions, "fetch">;
+  finder?: Omit<FinderOptions, "fetch" | "proxyRanges">;
   /** How often an unreachable speaker is looked for again on its own. Default 60 s. */
   relocateEveryMs?: number;
 }
@@ -119,8 +122,16 @@ export class RadioRegistry {
   private readonly searched = new Map<string, number>();
   /** The address from the multiroom lists last tried for each speaker. */
   private readonly tried = new Map<string, string>();
+  private proxy: string | undefined;
+  /** Requests as they leave Muga: proxy addresses (and anything not a radio's) go out as they are. */
+  private readonly direct: FetchLike;
+  /** Requests to radios, through the proxy when there is one. */
+  private readonly fetch: FetchLike;
 
   constructor(private readonly options: RadioRegistryOptions = {}) {
+    this.direct = options.fetch ?? ((url, init) => globalThis.fetch(url, init));
+    this.fetch = proxiedFetch(this.direct, () => this.proxy);
+    this.proxy = options.proxy;
     this.storage = safeStorage(options.storage);
     const radios = loadRadios(this.storage);
     const saved = this.storage.getItem(ACTIVE_KEY) ?? undefined;
@@ -138,7 +149,7 @@ export class RadioRegistry {
           new FsapiClient({
             host,
             pin: DEFAULT_PIN,
-            ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+            fetch: this.fetch,
           }),
       },
       options.multiroom,
@@ -149,8 +160,33 @@ export class RadioRegistry {
     });
     this.finder = new SpeakerFinder(
       { radios: () => this.snapshot.radios },
-      { ...options.finder, ...(options.fetch ? { fetch: options.fetch } : {}) },
+      { ...options.finder, fetch: this.fetch, proxyRanges: () => this.proxyRanges() },
     );
+  }
+
+  /** Reaches radios through an HTTPS proxy at home from now on, or directly (ADR 0017). */
+  setProxy(proxy: string | undefined): void {
+    if (proxy === this.proxy) return;
+    this.proxy = proxy;
+    this.tried.clear();
+    // Reach every speaker the new way right away.
+    for (const controller of this.controllers.values()) void controller.refreshNow();
+    void this.multiroom.refresh(true);
+  }
+
+  /** Whether `proxy` is a Muga proxy, and the ranges it reaches; rejects when it isn't one. */
+  checkProxy(proxy: string): Promise<ProxyInfo> {
+    return readProxyInfo(proxy, this.direct);
+  }
+
+  /** The ranges the proxy reaches, for "Find speakers"; undefined without a proxy. */
+  private async proxyRanges(): Promise<string[] | undefined> {
+    if (!this.proxy) return undefined;
+    try {
+      return (await this.checkProxy(this.proxy)).ranges;
+    } catch {
+      return [];
+    }
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -192,7 +228,7 @@ export class RadioRegistry {
     if (!config) return undefined;
     const controller = new RadioController(config, {
       ...this.options.controller,
-      ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+      fetch: this.fetch,
     });
     this.controllers.set(id, controller);
     controller.setHidden(!this.visible);
@@ -209,7 +245,7 @@ export class RadioRegistry {
       host,
       pin,
       timeoutMs: 6_000,
-      ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+      fetch: this.fetch,
     });
     const { values } = await client.getMultiple([
       "netRemote.sys.info.friendlyName",
@@ -420,7 +456,7 @@ export class RadioRegistry {
       host,
       pin: config.pin,
       timeoutMs: 3_000,
-      ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+      fetch: this.fetch,
     });
     try {
       const radioId = await client.get("netRemote.sys.info.radioId");

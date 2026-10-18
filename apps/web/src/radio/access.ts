@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useOptionalPreferences } from "../preferences.tsx";
 
 /**
  * Whether this page can reach radios on the local network (ADR 0010). Radios answer over plain
@@ -37,8 +38,12 @@ export async function localAccess(
   }
 }
 
-/** {@link localAccess}, kept current when the user changes the permission. */
+/**
+ * {@link localAccess}, kept current when the user changes the permission. With a proxy in Muga
+ * settings, the radios are reached through it, whatever the browser allows (ADR 0017).
+ */
 export function useLocalAccess(): LocalAccess {
+  const proxied = Boolean(useOptionalPreferences()?.proxy);
   const [access, setAccess] = useState<LocalAccess>("open");
   useEffect(() => {
     let cancelled = false;
@@ -55,5 +60,5 @@ export function useLocalAccess(): LocalAccess {
       status?.removeEventListener("change", onChange);
     };
   }, []);
-  return access;
+  return proxied ? "open" : access;
 }

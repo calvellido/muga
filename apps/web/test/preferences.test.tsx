@@ -31,10 +31,15 @@ function memory(initial: Record<string, string> = {}): StorageLike & { data: Map
 describe("preferences", () => {
   it("reads what was saved, and treats anything else as automatic", () => {
     const saved = (value: string) => readPreferences(memory({ "muga.preferences.v1": value }));
-    expect(saved('{"language":"es","theme":"dark"}')).toEqual({ language: "es", theme: "dark" });
-    expect(saved('{"language":"fr","theme":"blue"}')).toEqual({ language: "auto", theme: "auto" });
-    expect(saved("not json")).toEqual({ language: "auto", theme: "auto" });
-    expect(readPreferences(undefined)).toEqual({ language: "auto", theme: "auto" });
+    const auto = { language: "auto", theme: "auto", proxy: "" };
+    expect(
+      saved('{"language":"es","theme":"dark","proxy":"https://radios.example.com/x"}'),
+    ).toEqual({ language: "es", theme: "dark", proxy: "https://radios.example.com" });
+    expect(saved('{"language":"fr","theme":"blue","proxy":"http://radios.example.com"}')).toEqual(
+      auto,
+    );
+    expect(saved("not json")).toEqual(auto);
+    expect(readPreferences(undefined)).toEqual(auto);
   });
 
   it("follows the browser's languages unless one was chosen", () => {
@@ -85,6 +90,7 @@ describe("Muga settings", () => {
     expect(JSON.parse(storage.data.get("muga.preferences.v1") ?? "{}")).toEqual({
       language: "es",
       theme: "dark",
+      proxy: "",
     });
 
     await user.click(screen.getByRole("button", { name: "Volver" }));
