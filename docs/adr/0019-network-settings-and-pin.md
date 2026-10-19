@@ -46,5 +46,11 @@ Date: 2026-10-19. Status: accepted.
   - it records each commit;
   - it changes its PIN;
   - it serves a placeholder for the speaker's own page.
-- **Tested against the simulator only.** On real radios, none of the changes has been tried yet, on purpose: a wrong network setting strands the radio. The first real change should be made with the speaker within reach.
-- **To check on a real radio:** the Network card's details (reads only), and then one change, such as a fixed address, with the speaker at hand.
+- **Changes tested against the simulator only.** On real radios, none of the changes has been tried yet, on purpose: a wrong network setting strands the radio. The first real change should be made with the speaker within reach.
+- **Checked on an ICD2018 (V2.13.21c), reads only (2026-10-19):** nothing was written, and the radio was left as found.
+  - **Network card:** right in every row. The u32 addresses decode first octet first, and the radio's fixed address shows as Manual. "Stay connected in standby" is on.
+  - **The editor:** opens with the radio's own values, offers no Ethernet switch on Wi-Fi, and keeps Apply disabled until something changes.
+  - **No PIN card:** `sys.info.radioPin` answers FS_NODE_DOES_NOT_EXIST, although the node is in the firmware, and its own web page has no PIN option either. The card stays hidden there.
+  - **The RSA key:** `sys.rsa.status` is ready, and `sys.rsa.publicKey` reads `010001:` and a 1024-bit modulus, which Muga parses.
+  - **No scan results yet:** `sys.net.wlan.scanList` answers FS_FAIL before a scan, and Muga then lists no networks. So how a real radio sends the SSID field (`<array>` or `<c8_array>`) is still unseen. Muga handles both.
+- **Still to try on a real radio:** a scan, and one change, such as a fixed address, with the speaker at hand.
