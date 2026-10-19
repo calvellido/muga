@@ -163,7 +163,7 @@ Muga has been checked on these radios. Others with the same Frontier Silicon pla
 
 ## 🗺️ Roadmap
 
-**Muga 1.0** came out in October 2026: what's in it is in the [changelog](CHANGELOG.md).
+**Muga 1** (October 2026, up to 1.2.1) reached parity with UNDOK, and stays at [muga.calvellido.es/1/](https://muga.calvellido.es/1/). **Muga 2** is in development at muga.calvellido.es. What changed is in the [changelog](CHANGELOG.md).
 
 - ✅ Protocol core, simulator and command-line tool
 - ✅ Web app: now playing, controls, volume, sources and presets

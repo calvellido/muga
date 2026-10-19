@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0 (2026-10-19)
+
+- **Muga 2 begins.** New features land here first, at muga.calvellido.es. Muga 1, frozen at 1.2.1 with UNDOK parity, stays at muga.calvellido.es/1/, with its own speakers and settings.
+
 ## 1.2.1 (2026-10-19)
 
 - **Muga 1 stays at muga.calvellido.es/1/,** frozen: the version with UNDOK parity. New features keep landing at muga.calvellido.es first, and if anything goes wrong there, Muga 1 is still available. It keeps its own saved speakers and settings, and installs as its own app, "Muga 1".
