@@ -6,3 +6,6 @@ coverage/
 # Never commit vendor binaries or decompiled material (see README).
 *.apk
 *.isu.bin
+# Built Pages site and stable-version worktrees (tools/pages.ts)
+/pages/
+/.stable/

@@ -9,6 +9,7 @@ import {
 } from "./i18n/index.tsx";
 import { proxyOrigin } from "./radio/proxy.ts";
 import type { StorageLike } from "./radio/registry.ts";
+import { storageKey } from "./scope.ts";
 
 /** Muga's own settings (ADR 0014), kept in this browser. "auto" follows the browser or device. */
 export interface Preferences {
@@ -19,7 +20,7 @@ export interface Preferences {
 }
 
 export const DEFAULT_PREFERENCES: Preferences = { language: "auto", theme: "auto", proxy: "" };
-const KEY = "muga.preferences.v1";
+const KEY = storageKey("preferences.v1");
 const THEMES = ["auto", "light", "dark"] as const;
 
 /** Saved preferences; anything missing, unknown or unreadable counts as automatic. */

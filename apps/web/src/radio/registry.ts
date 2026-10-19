@@ -1,4 +1,5 @@
 import { DEFAULT_PIN, type FetchLike, FsapiClient } from "@muga/fsapi-core";
+import { storageKey } from "../scope.ts";
 import { RadioController, type RadioControllerOptions } from "./controller.ts";
 import { type FinderOptions, SpeakerFinder } from "./finder.ts";
 import {
@@ -67,8 +68,8 @@ export function localName(name: string): string | undefined {
     : undefined;
 }
 
-const RADIOS_KEY = "muga.radios.v1";
-const ACTIVE_KEY = "muga.activeRadio.v1";
+const RADIOS_KEY = storageKey("radios.v1");
+const ACTIVE_KEY = storageKey("activeRadio.v1");
 
 /** localStorage can be missing or throw (private browsing, blocked storage): never let that break the app. */
 function safeStorage(storage: StorageLike | undefined): StorageLike {
