@@ -165,6 +165,16 @@ describe("FsapiClient", () => {
     expect(maxInFlight()).toBe(1);
   });
 
+  it("sends queued requests with the PIN in force when they leave the queue", async () => {
+    const { fetch, calls } = fakeFetch({ GET: { body: ok("<value><u8>1</u8></value>") } });
+    const client = new FsapiClient({ host: "radio", fetch });
+    const first = client.get("netRemote.sys.power");
+    const second = client.get("netRemote.sys.power");
+    client.pin = "4321";
+    await Promise.all([first, second]);
+    expect(calls.map((url) => url.searchParams.get("pin"))).toEqual(["1234", "4321"]);
+  });
+
   it("does not queue the notification long-poll behind normal requests", async () => {
     const { fetch } = fakeFetch({
       GET_NOTIFIES: { hang: true },

@@ -209,6 +209,43 @@ describe("App", () => {
     expect(await screen.findByRole("tab", { name: "Sources" })).toBeTruthy();
   });
 
+  it("shows the network, moves the speaker to another Wi-Fi network and changes its PIN", async () => {
+    const confirm = vi.fn(() => true);
+    window.confirm = confirm;
+    const { sim, user } = await addSimulatedSpeaker({ wifiScanMs: 20 });
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const network = (await screen.findByRole("heading", { level: 3, name: "Network" }))
+      .parentElement as HTMLElement;
+    expect(await within(network).findByText("192.0.2.10")).toBeTruthy();
+    expect(within(network).getByText("Automatic (DHCP)")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Open the speaker's own page" }).getAttribute("href"),
+    ).toBe(`http://${sim.host}/web/index.html`);
+
+    await user.click(within(network).getByRole("button", { name: "Change network settings" }));
+    await user.click(within(network).getByRole("button", { name: "Look for networks" }));
+    await user.click(await within(network).findByRole("radio", { name: /Frontera 5G/ }));
+    const apply = within(network).getByRole("button", { name: "Apply" });
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    await user.type(within(network).getByLabelText("Password"), "frontier!");
+    await user.click(apply);
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Apply the new network settings"));
+    expect(
+      await within(network).findByText("Network settings sent. Muga Simulator is reconnecting."),
+    ).toBeTruthy();
+    expect(sim.networkCommits).toEqual([
+      expect.objectContaining({ ssid: "Frontera 5G", passphrase: "frontier!", dhcp: true }),
+    ]);
+
+    const pin = screen.getByLabelText("New PIN");
+    await user.type(pin, "4321");
+    await user.click(screen.getByRole("button", { name: "Change PIN" }));
+    expect(await screen.findByText("PIN changed.")).toBeTruthy();
+    expect(sim.pin).toBe("4321");
+    expect(registry?.getSnapshot().radios[0]?.pin).toBe("4321");
+    expect(screen.getByText("Muga uses PIN 4321 for this speaker.")).toBeTruthy();
+  });
+
   it("groups speakers, sets a speaker's volume in the group and ungroups", async () => {
     home = await startSimulatedHome({ speakers: 3 });
     const [living, kitchen] = home.speakers;

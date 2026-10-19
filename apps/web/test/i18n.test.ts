@@ -36,6 +36,8 @@ const SAMPLE_VALUES = {
   progress: 45,
   proxy: "https://radios.example.com",
   ranges: "192.168.1.x",
+  pin: "4321",
+  address: "192.0.2.42",
 };
 
 describe("messages", () => {

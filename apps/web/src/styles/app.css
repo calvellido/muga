@@ -1229,6 +1229,60 @@ input {
   gap: 10px;
 }
 
+.network-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--border);
+}
+
+.network-editor__group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.network-editor__group legend {
+  margin-block-end: 4px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-block-size: 44px;
+  cursor: pointer;
+}
+
+.choice input {
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--accent);
+}
+
+.choice__label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.choice__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .signal meter {
   inline-size: 8rem;
   max-inline-size: 100%;

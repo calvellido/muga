@@ -9,6 +9,7 @@ export {
   type MultiroomNetwork,
   type MultiroomNetworkOptions,
 } from "./multiroom.ts";
+export type { SimNetworkCommit, SimWifiNetwork } from "./network.ts";
 export {
   DEFAULT_PROFILE,
   type SimListItem,

@@ -1,4 +1,5 @@
-import type { NavItemSubType, NavItemType } from "@muga/fsapi-core";
+import { ipv4ToU32, type NavItemSubType, type NavItemType } from "@muga/fsapi-core";
+import type { SimWifiNetwork } from "./network.ts";
 
 /** Initial radio state. Scalars use decoded values (enum names, text); lists use catalog field names. */
 export interface SimProfile {
@@ -8,6 +9,8 @@ export interface SimProfile {
   modes: Record<string, SimModeProfile>;
   /** Nodes this simulated model doesn't implement (answer FS_NODE_DOES_NOT_EXIST). */
   missingNodes: string[];
+  /** What a Wi-Fi scan finds. */
+  wifi?: SimWifiNetwork[];
 }
 
 export interface SimListItem {
@@ -163,6 +166,17 @@ export const DEFAULT_PROFILE: SimProfile = {
     "netRemote.sys.net.wlan.macAddress": "00:22:61:00:00:00",
     "netRemote.sys.net.wired.interfaceEnable": "INTERFACE_DISABLE",
     "netRemote.sys.net.wired.macAddress": "00:22:61:00:00:01",
+    "netRemote.sys.net.wlan.interfaceEnable": "INTERFACE_ENABLE",
+    "netRemote.sys.net.wlan.region": "EUROPE",
+    "netRemote.sys.net.wlan.regionFcc": "NOT_ACTIVE",
+    "netRemote.sys.net.keepConnected": "YES",
+    // Documentation addresses (RFC 5737), as the radio stores them: one u32 each.
+    "netRemote.sys.net.ipConfig.dhcp": "YES",
+    "netRemote.sys.net.ipConfig.address": ipv4ToU32("192.0.2.10") ?? 0,
+    "netRemote.sys.net.ipConfig.subnetMask": ipv4ToU32("255.255.255.0") ?? 0,
+    "netRemote.sys.net.ipConfig.gateway": ipv4ToU32("192.0.2.1") ?? 0,
+    "netRemote.sys.net.ipConfig.dnsPrimary": ipv4ToU32("192.0.2.1") ?? 0,
+    "netRemote.sys.net.ipConfig.dnsSecondary": 0,
     "netRemote.sys.sleep": 0,
     "netRemote.sys.audio.eqPreset": 1,
     "netRemote.sys.audio.eqLoudness": "OFF",
@@ -282,4 +296,12 @@ export const DEFAULT_PROFILE: SimProfile = {
     AUXIN: { values: { "netRemote.nav.caps": 0, "netRemote.play.caps": 0 } },
   },
   missingNodes: [],
+  // The same name twice (two access points) and a hidden network, as real scans return them.
+  wifi: [
+    { ssid: "MugaNet", secured: true, signal: 60 },
+    { ssid: "Frontera 5G", secured: true, signal: 48 },
+    { ssid: "MugaNet", secured: true, signal: 31 },
+    { ssid: "Café Muga", secured: false, signal: 35 },
+    { ssid: "", secured: true, signal: 22 },
+  ],
 };

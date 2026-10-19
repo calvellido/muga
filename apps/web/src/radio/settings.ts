@@ -1,4 +1,7 @@
 import {
+  encryptForRadio,
+  ipv4FromU32,
+  ipv4ToU32,
   isFsapiError,
   type ListItem,
   type ListPath,
@@ -10,9 +13,14 @@ import type {
   ClockSource,
   ClockState,
   EqBand,
+  NetworkChange,
+  NetworkInfo,
   RadioContext,
   SettingsState,
   UpdateCheck,
+  WifiChoice,
+  WifiNetwork,
+  WifiSecurity,
 } from "./types.ts";
 
 /** UNDOK's sleep timer choices, in minutes (`sleep_timer_integer_values_array`). */
@@ -53,6 +61,90 @@ const CLOCK_NODES = [
   "netRemote.sys.clock.localTime",
 ] as const satisfies readonly ScalarPath[];
 
+/** How the speaker is connected, beyond `DEVICE_NODES` (the radio's web page, Status tab). */
+const NETWORK_NODES = [
+  "netRemote.sys.net.wlan.interfaceEnable",
+  "netRemote.sys.net.wlan.region",
+  "netRemote.sys.net.ipConfig.dhcp",
+  "netRemote.sys.net.ipConfig.address",
+  "netRemote.sys.net.ipConfig.subnetMask",
+  "netRemote.sys.net.ipConfig.gateway",
+  "netRemote.sys.net.ipConfig.dnsPrimary",
+  "netRemote.sys.net.ipConfig.dnsSecondary",
+  "netRemote.sys.net.keepConnected",
+  "netRemote.sys.info.radioPin",
+] as const satisfies readonly ScalarPath[];
+
+const WIFI_ENABLE = "netRemote.sys.net.wlan.interfaceEnable";
+const WIRED_ENABLE = "netRemote.sys.net.wired.interfaceEnable";
+
+/** Authentication and encryption for a network typed by hand (the radio's web page pairs them so). */
+const SECURITY: Record<WifiSecurity, readonly ["OPEN" | "WPA" | "WPA2", "NONE" | "WEP" | "AES"]> = {
+  NONE: ["OPEN", "NONE"],
+  WEP: ["OPEN", "WEP"],
+  WPA: ["WPA", "AES"],
+  WPA2: ["WPA2", "AES"],
+};
+
+/** A speaker PIN: four digits, as the radio's own web page asks for. */
+export const PIN_PATTERN = /^\d{4}$/;
+/** How long to wait for a Wi-Fi scan, as UNDOK's setup does. */
+const SCAN_TIMEOUT_MS = 30_000;
+/** The radio makes its RSA key itself; UNDOK waits up to a minute for it. */
+const KEY_TIMEOUT_MS = 60_000;
+/** The radio may drop off the network as it applies new settings. */
+const COMMIT_TIMEOUT_MS = 5_000;
+
+/** Whether a passphrase fits the security: WPA 8 to 63 characters, WEP 5 or 13 (or 10 or 26 hex). */
+export function validPassphrase(security: WifiSecurity, passphrase: string): boolean {
+  if (security === "NONE") return passphrase === "";
+  if (security === "WEP") {
+    return [5, 13].includes(passphrase.length) || /^([0-9a-f]{10}|[0-9a-f]{26})$/i.test(passphrase);
+  }
+  return passphrase.length >= 8 && passphrase.length <= 63;
+}
+
+/** The strongest access point of each named network, strongest first; hidden ones are left out. */
+export function strongestNetworks(
+  items: readonly ListItem<"netRemote.sys.net.wlan.scanList">[],
+): WifiNetwork[] {
+  const best = new Map<string, WifiNetwork>();
+  for (const item of items) {
+    if (!item.ssid.trim()) continue;
+    const network = {
+      key: item.key,
+      ssid: item.ssid,
+      secured: item.privacy !== 0,
+      signal: item.rssi,
+    };
+    const seen = best.get(item.ssid);
+    if (!seen || network.signal > seen.signal) best.set(item.ssid, network);
+  }
+  return [...best.values()].sort((a, b) => b.signal - a.signal || a.ssid.localeCompare(b.ssid));
+}
+
+/** The radio's built-in web page (ADR 0019), from its saved host. */
+export function speakerPageUrl(host: string): string {
+  const trimmed = host.trim();
+  const origin = /^[a-z]+:\/\//i.test(trimmed)
+    ? new URL(trimmed).origin
+    : `http://${trimmed.replace(/\/.*$/, "")}`;
+  return `${origin}/web/index.html`;
+}
+
+/**
+ * Where a speaker saved at `host` answers once given the fixed address `fixed`: the new address
+ * on the same port. Undefined when it was saved by name rather than by IP address.
+ */
+export function hostAt(host: string, fixed: string): string | undefined {
+  const bare = host
+    .trim()
+    .replace(/^[a-z]+:\/\//i, "")
+    .replace(/\/.*$/, "");
+  const match = /^\d{1,3}(?:\.\d{1,3}){3}(:\d+)?$/.exec(bare);
+  return match ? `${fixed}${match[1] ?? ""}` : undefined;
+}
+
 /** What the radio knows about software updates (doc 06 §1.1). */
 const UPDATE_NODES = [
   "netRemote.sys.isu.state",
@@ -88,6 +180,9 @@ export function initialSettings(): SettingsState {
   return {
     status: "idle",
     device: undefined,
+    network: undefined,
+    wifiScan: undefined,
+    pinChangeable: false,
     sleep: undefined,
     eq: undefined,
     clock: undefined,
@@ -152,6 +247,10 @@ export class SettingsManager {
     return this.ctx.snapshot().settings;
   }
 
+  private get pollMs(): number {
+    return this.ctx.nav.pollMs ?? 500;
+  }
+
   private set(patch: Partial<SettingsState>): void {
     this.ctx.update({ settings: { ...this.state, ...patch } });
   }
@@ -214,12 +313,9 @@ export class SettingsManager {
     this.set({ status: "loading", update: undefined });
     try {
       const device = (await client.getMultiple(DEVICE_NODES)).values;
+      const net = (await client.getMultiple(NETWORK_NODES)).values;
       const audio = (await client.getMultiple(AUDIO_NODES)).values;
       const clock = (await client.getMultiple(CLOCK_NODES)).values;
-
-      const wired = device["netRemote.sys.net.wired.interfaceEnable"] === "INTERFACE_ENABLE";
-      const ssid = device["netRemote.sys.net.wlan.connectedSSID"]?.trim() ?? "";
-      const rssi = device["netRemote.sys.net.wlan.rssi"];
       const sleep = audio["netRemote.sys.sleep"];
 
       this.set({
@@ -229,15 +325,9 @@ export class SettingsManager {
           version: device["netRemote.sys.info.version"]?.trim() ?? "",
           radioId: device["netRemote.sys.info.radioId"]?.trim() ?? "",
           serial: device["netRemote.sys.info.serialNumber"]?.trim() ?? "",
-          network: wired ? "ethernet" : ssid || rssi !== undefined ? "wifi" : undefined,
-          ssid,
-          signal: wired ? undefined : rssi,
-          mac:
-            (wired
-              ? device["netRemote.sys.net.wired.macAddress"]
-              : device["netRemote.sys.net.wlan.macAddress"]
-            )?.trim() ?? "",
         },
+        network: networkInfo(device, net),
+        pinChangeable: net["netRemote.sys.info.radioPin"] !== undefined,
         sleep: sleep === undefined ? undefined : { remaining: sleep, readAt: this.ctx.now() },
         eq: await this.readEq(
           audio["netRemote.sys.audio.eqPreset"],
@@ -251,6 +341,146 @@ export class SettingsManager {
       this.set({ status: "error" });
       this.ctx.fail("settings", error);
     }
+  }
+
+  // Network
+
+  /**
+   * UNDOK's hidden "Keep network connected" (doc 06 §3.1). Off, the radio leaves the network in
+   * standby, and no app can wake it. Applies at once, without a commit.
+   */
+  setKeepConnected(on: boolean): Promise<boolean> {
+    return this.ctx.run("network", async () => {
+      await this.ctx.client.set("netRemote.sys.net.keepConnected", on ? "YES" : "NO");
+      const network = this.state.network;
+      if (network) this.set({ network: { ...network, keepConnected: on } });
+    });
+  }
+
+  /**
+   * Asks the radio which Wi-Fi networks it can see (`sys.net.wlan.scan`, then `scanList`). As
+   * its own web page does, Wi-Fi is switched on for the scan when it's off, and off again after.
+   * A radio without a Wi-Fi region gets one first, as in UNDOK's setup.
+   */
+  async scanWifi(): Promise<void> {
+    const network = this.state.network;
+    if (!network?.editable || this.state.wifiScan?.status === "scanning") return;
+    const { client } = this.ctx;
+    const networks = this.state.wifiScan?.networks ?? [];
+    this.set({ wifiScan: { status: "scanning", networks } });
+    const wifiOff = network.connection === "ethernet";
+    try {
+      if (wifiOff) await client.set(WIFI_ENABLE, "INTERFACE_ENABLE");
+      if (network.region === "INVALID") {
+        const fcc = await client.get("netRemote.sys.net.wlan.regionFcc").catch(() => undefined);
+        await client.set("netRemote.sys.net.wlan.region", fcc === "ACTIVE" ? "USA" : "EUROPE");
+      }
+      await this.scanIdle(); // another controller's scan may be under way
+      await client.set("netRemote.sys.net.wlan.scan", "SCAN");
+      await sleep(this.pollMs * 2);
+      await this.scanIdle();
+      const found = (await this.list("netRemote.sys.net.wlan.scanList")) ?? [];
+      this.set({ wifiScan: { status: "ready", networks: strongestNetworks(found) } });
+    } catch (error) {
+      this.set({ wifiScan: { status: "failed", networks } });
+      this.ctx.fail("wifiScan", error);
+    } finally {
+      if (wifiOff) await client.set(WIFI_ENABLE, "INTERFACE_DISABLE").catch(() => undefined);
+    }
+  }
+
+  private async scanIdle(): Promise<void> {
+    for (let waited = 0; waited < SCAN_TIMEOUT_MS; waited += this.pollMs) {
+      if ((await this.ctx.client.get("netRemote.sys.net.wlan.scan")) !== "SCAN") return;
+      await sleep(this.pollMs);
+    }
+    throw new Error("The speaker didn't finish looking for Wi-Fi networks.");
+  }
+
+  /**
+   * Moves the speaker to another network or address, in the order the radio's own web page uses
+   * (ADR 0019): interfaces, the Wi-Fi network (its passphrase
+   * RSA-encrypted with the radio's key), addressing, then `sys.net.commitChanges`. The radio
+   * then reconnects, maybe at another address, or not at all if the settings are wrong. No reply
+   * to the commit counts as done, as in UNDOK: the radio may already be reconnecting.
+   */
+  changeNetwork(change: NetworkChange): Promise<boolean> {
+    const network = this.state.network;
+    if (!network?.editable) return Promise.resolve(false);
+    const { client } = this.ctx;
+    return this.ctx.run("network", async () => {
+      const wifi = change.connection === "wifi";
+      if (network.connection !== change.connection) {
+        await client.set(wifi ? WIFI_ENABLE : WIRED_ENABLE, "INTERFACE_ENABLE");
+        if (network.connection) {
+          await client.set(wifi ? WIRED_ENABLE : WIFI_ENABLE, "INTERFACE_DISABLE");
+        }
+      }
+      if (wifi && change.wifi) await this.joinWifi(change.wifi.network, change.wifi.passphrase);
+      const addressing = change.addressing;
+      await client.set("netRemote.sys.net.ipConfig.dhcp", addressing.dhcp ? "YES" : "NO");
+      if (!addressing.dhcp) {
+        const fixed = [
+          ["netRemote.sys.net.ipConfig.address", addressing.address],
+          ["netRemote.sys.net.ipConfig.subnetMask", addressing.subnetMask],
+          ["netRemote.sys.net.ipConfig.gateway", addressing.gateway],
+          ["netRemote.sys.net.ipConfig.dnsPrimary", addressing.dns[0]],
+          ["netRemote.sys.net.ipConfig.dnsSecondary", addressing.dns[1]],
+        ] as const;
+        for (const [node, text] of fixed) await client.set(node, ipv4ToU32(text) ?? 0);
+      }
+      try {
+        await client.set("netRemote.sys.net.commitChanges", "YES", {
+          timeoutMs: COMMIT_TIMEOUT_MS,
+        });
+      } catch (error) {
+        if (!isFsapiError(error, "timeout") && !isFsapiError(error, "network")) throw error;
+      }
+      this.set({ wifiScan: undefined });
+    });
+  }
+
+  private async joinWifi(network: WifiChoice, passphrase: string): Promise<void> {
+    const { client } = this.ctx;
+    if (passphrase) {
+      const key = await this.radioKey();
+      await client.set("netRemote.sys.net.wlan.setPassphrase", encryptForRadio(key, passphrase));
+    }
+    if (network.kind === "scanned") {
+      await client.set("netRemote.sys.net.wlan.selectAP", network.key);
+      return;
+    }
+    const [auth, encryption] = SECURITY[network.security];
+    await client.set("netRemote.sys.net.wlan.setEncType", encryption);
+    await client.set("netRemote.sys.net.wlan.setAuthType", auth);
+    await client.set("netRemote.sys.net.wlan.setSSID", network.ssid);
+  }
+
+  /** `sys.rsa.publicKey`, once the radio has made its key. */
+  private async radioKey(): Promise<string> {
+    const { client } = this.ctx;
+    for (let waited = 0; waited < KEY_TIMEOUT_MS; waited += this.pollMs) {
+      if ((await client.get("netRemote.sys.rsa.status")) === "KEY_AVAILABLE") {
+        return client.get("netRemote.sys.rsa.publicKey");
+      }
+      await sleep(this.pollMs);
+    }
+    throw new Error("The speaker's encryption key isn't ready. Try again in a minute.");
+  }
+
+  // PIN
+
+  /**
+   * Changes the PIN the speaker asks controllers for (`sys.info.radioPin`). From then on only the
+   * new PIN works, so this client switches at once; the caller saves it for next time
+   * (`RadioRegistry.updatePin`). Other controllers need to be told the new PIN.
+   */
+  changePin(pin: string): Promise<boolean> {
+    if (!PIN_PATTERN.test(pin)) return Promise.resolve(false);
+    return this.ctx.run("pin", async () => {
+      await this.ctx.client.set("netRemote.sys.info.radioPin", pin);
+      this.ctx.client.pin = pin;
+    });
   }
 
   // Name
@@ -508,4 +738,38 @@ export class SettingsManager {
       readAt: this.ctx.now(),
     };
   }
+}
+
+type DeviceValues = MultipleResult<(typeof DEVICE_NODES)[number]>["values"];
+type NetworkValues = MultipleResult<(typeof NETWORK_NODES)[number]>["values"];
+
+const address = (value: number | undefined) =>
+  value === undefined || value === 0 ? "" : ipv4FromU32(value);
+
+function networkInfo(device: DeviceValues, net: NetworkValues): NetworkInfo {
+  const wired = device["netRemote.sys.net.wired.interfaceEnable"] === "INTERFACE_ENABLE";
+  const ssid = device["netRemote.sys.net.wlan.connectedSSID"]?.trim() ?? "";
+  const rssi = device["netRemote.sys.net.wlan.rssi"];
+  const wifi = net["netRemote.sys.net.wlan.interfaceEnable"] === "INTERFACE_ENABLE";
+  const dhcp = net["netRemote.sys.net.ipConfig.dhcp"];
+  const region = net["netRemote.sys.net.wlan.region"];
+  const keep = net["netRemote.sys.net.keepConnected"];
+  return {
+    connection: wired ? "ethernet" : wifi || ssid || rssi !== undefined ? "wifi" : undefined,
+    ssid,
+    signal: wired ? undefined : rssi,
+    dhcp: dhcp === undefined ? undefined : dhcp === "YES",
+    address: address(net["netRemote.sys.net.ipConfig.address"]),
+    subnetMask: address(net["netRemote.sys.net.ipConfig.subnetMask"]),
+    gateway: address(net["netRemote.sys.net.ipConfig.gateway"]),
+    dns: [
+      address(net["netRemote.sys.net.ipConfig.dnsPrimary"]),
+      address(net["netRemote.sys.net.ipConfig.dnsSecondary"]),
+    ].filter(Boolean),
+    wifiMac: device["netRemote.sys.net.wlan.macAddress"]?.trim() ?? "",
+    ethernetMac: device["netRemote.sys.net.wired.macAddress"]?.trim() ?? "",
+    region: typeof region === "string" ? region : undefined,
+    keepConnected: keep === undefined ? undefined : keep === "YES",
+    editable: dhcp !== undefined && net["netRemote.sys.net.ipConfig.address"] !== undefined,
+  };
 }
