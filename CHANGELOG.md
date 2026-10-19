@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2026-10-19)
+
+- **Muga 1 stays at muga.calvellido.es/1/,** frozen: the version with UNDOK parity. New features keep landing at muga.calvellido.es first, and if anything goes wrong there, Muga 1 is still available. It keeps its own saved speakers and settings, and installs as its own app, "Muga 1".
+
 ## 1.2.0 (2026-10-18)
 
 - **iPhone, iPad, Safari and Firefox,** through a proxy at home. A small HTTPS proxy on your network, such as Caddy on a Home Assistant box, reaches the radios for browsers that can't. Set it up with the guide in `docs/proxy`, then enter its address in Muga settings, under "Proxy for the radios". Everything else works as usual: connecting by IP address, finding speakers, groups.

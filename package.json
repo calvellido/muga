@@ -1,6 +1,6 @@
 {
   "name": "muga",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "description": "Muga: a web controller for Frontier Silicon FSAPI internet radios",
@@ -15,6 +15,7 @@
     "web": "pnpm --filter @muga/web dev",
     "web:build": "pnpm --filter @muga/web build",
     "web:preview": "pnpm --filter @muga/web preview",
+    "pages:build": "tsx tools/pages.ts",
     "catalog:curate": "tsx tools/curate-catalog.ts",
     "gen": "tsx tools/gen-nodes.ts",
     "gen:check": "tsx tools/gen-nodes.ts --check",

@@ -5,6 +5,10 @@ import { VitePWA } from "vite-plugin-pwa";
 // Where the app is served from: "/" locally and on https://muga.calvellido.es/, or a path such as
 // "/muga/" on a GitHub Pages site without a domain of its own (the Pages workflow sets it).
 const base = process.env.MUGA_BASE ?? "/";
+// A stable major version, served at /1/, /2/, … next to main at the root (ADR 0018).
+const major = /\/(\d+)\/$/.exec(base)?.[1];
+const name = major ? `Muga ${major}` : "Muga";
+const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export default defineConfig({
   base,
@@ -14,8 +18,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "icon.svg", "apple-touch-icon-180x180.png"],
       manifest: {
-        name: "Muga",
-        short_name: "Muga",
+        name,
+        short_name: name,
         description: "Control your internet radios from the browser.",
         lang: "en",
         // An installed app opens, and stays, where it was installed from.
@@ -41,6 +45,8 @@ export default defineConfig({
         // Cache the app shell only. Radio requests go straight to the network.
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest}"],
         navigateFallback: "index.html",
+        // At the root, leave the stable versions' paths to their own service workers.
+        navigateFallbackDenylist: major ? [] : [new RegExp(`^${escaped}\\d+/`)],
       },
     }),
   ],

@@ -1,6 +1,6 @@
 {
   "name": "@muga/fsapi-sim",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Simulated FSAPI radio (HTTP) for tests and hardware-free development",
   "license": "MIT",

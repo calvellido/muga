@@ -61,6 +61,8 @@ From then on the app works without the website. It talks straight to your radios
 
 In Safari or Firefox, and on an iPhone or iPad, see [Where it works](#-where-it-works).
 
+New features land at muga.calvellido.es first. **Muga 1**, the version with UNDOK parity, stays frozen at **[muga.calvellido.es/1/](https://muga.calvellido.es/1/)** in case anything goes wrong in the main one. It keeps its own speakers and settings, and installs as its own app.
+
 ## 🧭 Where it works
 
 | Browser | From muga.calvellido.es | Served at home over plain HTTP |
@@ -146,7 +148,7 @@ const modes = await radio.listAllItems("netRemote.sys.caps.validModes");
 
 </details>
 
-Every pull request raises the version with `pnpm bump` and describes the change in [`CHANGELOG.md`](CHANGELOG.md); CI checks both, and merging publishes the release ([ADR 0015](docs/adr/0015-versions-and-releases.md)). Decisions are recorded in [`docs/adr`](docs/adr), and changes to the radios' firmware that would help are in [Radio firmware wishes](docs/radio-firmware-wishes.md). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
+Every pull request raises the version with `pnpm bump` and describes the change in [`CHANGELOG.md`](CHANGELOG.md); CI checks both, and merging publishes the release ([ADR 0015](docs/adr/0015-versions-and-releases.md)). The site serves `main` at its root, and each stable major version listed in [`stable.json`](stable.json) at `/1/`, `/2/`, …, built from its release tag ([ADR 0018](docs/adr/0018-stable-versions.md)). Decisions are recorded in [`docs/adr`](docs/adr), and changes to the radios' firmware that would help are in [Radio firmware wishes](docs/radio-firmware-wishes.md). Never commit the UNDOK APK, decompiled sources, firmware images or analysis evidence; `.gitignore` blocks `*.apk` and `*.isu.bin` as a safety net.
 
 ## 📻 Tested radios
 
