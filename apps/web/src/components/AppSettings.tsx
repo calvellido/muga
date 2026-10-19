@@ -4,8 +4,8 @@ import { type Preferences, usePreferences } from "../preferences.tsx";
 import { useRegistry } from "../radio/hooks.ts";
 import { proxyOrigin } from "../radio/proxy.ts";
 import { APP_VERSION } from "../version.ts";
+import { ChipGroup } from "./ChipGroup.tsx";
 import { Icon } from "./Icon.tsx";
-import { ChipGroup } from "./Settings.tsx";
 
 const THEMES = ["auto", "light", "dark"] as const satisfies readonly Preferences["theme"][];
 

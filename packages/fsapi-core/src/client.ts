@@ -45,6 +45,8 @@ export interface FsapiClientOptions {
 
 export interface RequestOptions {
   signal?: AbortSignal;
+  /** Instead of the client's `timeoutMs`, for this request. */
+  timeoutMs?: number;
 }
 
 export interface ListPage<T> {
@@ -67,7 +69,6 @@ export interface Notification {
 }
 
 interface SendOptions extends RequestOptions {
-  timeoutMs?: number;
   queued?: boolean;
 }
 
@@ -398,9 +399,14 @@ export class FsapiClient {
     target: Omit<RequestTarget, "pin">,
     options: SendOptions = {},
   ): Promise<string> {
-    const url = buildUrl(this.baseUrl, verb, { ...target, pin: this.pin });
+    // Built when the request leaves the queue, so a PIN changed meanwhile is the one sent.
     const run = () =>
-      this.fetchText(url, options.timeoutMs ?? this.timeoutMs, options.signal, target.node);
+      this.fetchText(
+        buildUrl(this.baseUrl, verb, { ...target, pin: this.pin }),
+        options.timeoutMs ?? this.timeoutMs,
+        options.signal,
+        target.node,
+      );
     return options.queued === false ? run() : this.queue.run(run);
   }
 

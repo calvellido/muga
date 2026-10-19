@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0 (2026-10-19)
+
+- **Network settings** for each speaker: how it's connected, with its address, gateway, DNS servers and Wi-Fi signal.
+  - **Move it to another Wi-Fi network,** found with "Look for networks" or typed by hand. The password goes to the speaker encrypted with its own key.
+  - **Set a fixed address,** or go back to an automatic one. Muga then looks for the speaker at its new address.
+  - **Stay connected in standby,** so Muga and other apps can wake it.
+- **Speaker PIN:** change the PIN a speaker asks for. Muga keeps using the new one; UNDOK, and Muga in other browsers, will ask for it.
+- **The speaker's own web page,** built into these radios, is linked from "About this speaker".
+
 ## 2.0.0 (2026-10-19)
 
 - **Muga 2 begins.** New features land here first, at muga.calvellido.es. Muga 1, frozen at 1.2.1 with UNDOK parity, stays at muga.calvellido.es/1/, with its own speakers and settings.

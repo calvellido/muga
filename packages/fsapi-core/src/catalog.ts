@@ -23,16 +23,19 @@ export type NodeValue<P extends ScalarPath> = Defs[P] extends { type: "e8" }
 
 export type SetInput<P extends WritablePath> = NodeValue<P>;
 
-type FieldValue<T> = T extends "c8" ? string : number;
+/** `c8` fields are text, and so is a `u8` field longer than one byte: an SSID's bytes. */
+type FieldValue<F> = F extends { type: "c8" }
+  ? string
+  : F extends { type: "u8"; length: infer L }
+    ? L extends 1
+      ? number
+      : string
+    : number;
 
 /** A decoded list item; field names follow the catalog (camel case), plus `key`. */
 export type ListItem<P extends ListPath> = Defs[P] extends { fields: readonly (infer F)[] }
   ? {
-      [K in F as K extends { name: infer N extends string } ? N : never]: K extends {
-        type: infer T;
-      }
-        ? FieldValue<T>
-        : never;
+      [K in F as K extends { name: infer N extends string } ? N : never]: FieldValue<K>;
     } & Record<string, number | string>
   : never;
 

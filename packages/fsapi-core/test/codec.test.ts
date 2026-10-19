@@ -99,4 +99,23 @@ describe("decodeListItem", () => {
       newfield: "future",
     });
   });
+
+  it("decodes byte-array fields (a scanned SSID) from hex, or as text when sent as text", () => {
+    const scanned = (ssid: { tag: string; text: string }) =>
+      decodeListItem(def("netRemote.sys.net.wlan.scanList"), {
+        key: 2,
+        fields: {
+          ssid,
+          privacy: { tag: "u8", text: "1" },
+          wpscapability: { tag: "u8", text: "0" },
+          rssi: { tag: "u8", text: "54" },
+        },
+      });
+    expect(scanned({ tag: "array", text: "4D7567614E6574000000" })).toMatchObject({
+      ssid: "MugaNet",
+      privacy: 1,
+      rssi: 54,
+    });
+    expect(scanned({ tag: "c8_array", text: "CAFE" }).ssid).toBe("CAFE");
+  });
 });

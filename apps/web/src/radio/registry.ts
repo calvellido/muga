@@ -348,6 +348,26 @@ export class RadioRegistry {
     return search;
   }
 
+  /**
+   * After a speaker was given a fixed address in its network settings, waits for it to answer
+   * there and moves it there. Resolves false if it doesn't within `timeoutMs`; the usual search
+   * (`relocate`) still runs when it goes offline.
+   */
+  async expectAt(
+    id: string,
+    host: string,
+    { timeoutMs = 120_000, everyMs = 3_000 }: { timeoutMs?: number; everyMs?: number } = {},
+  ): Promise<boolean> {
+    for (let waited = 0; waited <= timeoutMs; waited += everyMs) {
+      const config = this.snapshot.radios.find((r) => r.id === id);
+      if (!config) return false;
+      if (address(config.host) === address(host)) return true;
+      if (await this.answersAs(host, config)) return this.moveTo(id, host);
+      await new Promise((resolve) => setTimeout(resolve, everyMs));
+    }
+    return false;
+  }
+
   /** Keeps the saved name in step after the radio was renamed (shown while it's offline). */
   rename(id: string, name: string): void {
     const radios = this.snapshot.radios.map((r) => (r.id === id ? { ...r, name } : r));

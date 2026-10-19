@@ -107,14 +107,65 @@ export interface DeviceInfo {
   version: string;
   radioId: string;
   serial: string;
-  /** How the radio is connected, when it says. */
-  network: "wifi" | "ethernet" | undefined;
+}
+
+/** How the speaker is connected (`sys.net.*`). Addresses are dotted, empty when unknown. */
+export interface NetworkInfo {
+  /** Which interface is in use, when the radio says. */
+  connection: "wifi" | "ethernet" | undefined;
   /** Wi-Fi network name (`sys.net.wlan.connectedSSID`, a byte array). */
   ssid: string;
   /** `sys.net.wlan.rssi` as the radio reports it; UNDOK draws it as a bar. */
   signal: number | undefined;
-  /** The wired MAC address when Ethernet is in use, else the Wi-Fi one (as UNDOK). */
-  mac: string;
+  /** The address comes from the router (DHCP); undefined when the radio doesn't say. */
+  dhcp: boolean | undefined;
+  address: string;
+  subnetMask: string;
+  gateway: string;
+  /** DNS servers that are set (`0.0.0.0` is left out). */
+  dns: string[];
+  wifiMac: string;
+  ethernetMac: string;
+  /** `sys.net.wlan.region`, which decides the Wi-Fi channels it may use. */
+  region: string | undefined;
+  /** Stays on the network in standby (`sys.net.keepConnected`); undefined: no such setting. */
+  keepConnected: boolean | undefined;
+  /** It can be moved to another network or address: its `ipConfig` nodes answer. */
+  editable: boolean;
+}
+
+/** A network a Wi-Fi scan found; the strongest access point of each name. */
+export interface WifiNetwork {
+  /** For `sys.net.wlan.selectAP`. */
+  key: number;
+  ssid: string;
+  /** Needs a passphrase. */
+  secured: boolean;
+  signal: number;
+}
+
+export interface WifiScan {
+  status: "scanning" | "ready" | "failed";
+  networks: WifiNetwork[];
+}
+
+/** Wi-Fi security for a network typed by hand, as the radio's own web page offers it. */
+export type WifiSecurity = "NONE" | "WEP" | "WPA" | "WPA2";
+
+export type WifiChoice =
+  | { kind: "scanned"; key: number; ssid: string; secured: boolean }
+  | { kind: "manual"; ssid: string; security: WifiSecurity };
+
+export type Addressing =
+  | { dhcp: true }
+  | { dhcp: false; address: string; subnetMask: string; gateway: string; dns: [string, string] };
+
+/** New network settings, applied together with `sys.net.commitChanges`. */
+export interface NetworkChange {
+  connection: "wifi" | "ethernet";
+  /** The Wi-Fi network to join; undefined stays on the current one. */
+  wifi?: { network: WifiChoice; passphrase: string };
+  addressing: Addressing;
 }
 
 export interface EqBand {
@@ -164,6 +215,11 @@ export type UpdateCheck =
 export interface SettingsState {
   status: "idle" | "loading" | "ready" | "error";
   device: DeviceInfo | undefined;
+  network: NetworkInfo | undefined;
+  /** The last Wi-Fi scan; undefined until one is started. */
+  wifiScan: WifiScan | undefined;
+  /** The speaker's PIN can be changed (`sys.info.radioPin` answers). */
+  pinChangeable: boolean;
   /** Seconds left on the sleep timer (0: off) and when they were read; undefined: no timer. */
   sleep: { remaining: number; readAt: number } | undefined;
   eq: EqState | undefined;

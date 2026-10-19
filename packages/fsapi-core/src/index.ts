@@ -29,6 +29,7 @@ export {
   decodeScalar,
   encodeByteArray,
   encodeScalar,
+  isByteArrayField,
   type ScalarValue,
 } from "./codec.ts";
 export {
@@ -49,6 +50,7 @@ export {
   redactPin,
 } from "./errors.ts";
 export { NODE_DEFS } from "./generated/nodes.ts";
+export { ipv4FromU32, ipv4ToU32 } from "./ipv4.ts";
 export {
   addToGroup,
   createGroup,
@@ -92,6 +94,7 @@ export {
 } from "./nav.ts";
 export { NotificationSession, type NotificationSessionOptions } from "./notifications.ts";
 export { RequestQueue } from "./queue.ts";
+export { encryptForRadio, parseRadioKey, type RadioKey, randomNonZeroBytes } from "./rsa.ts";
 export type * from "./types.ts";
 export { buildUrl, type QueryParam, type RequestTarget, toBaseUrl } from "./url.ts";
 export {

@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type MessageId, useT } from "../i18n/index.tsx";
 import type { RadioController } from "../radio/controller.ts";
@@ -8,10 +8,13 @@ import {
   NAME_MAX_BYTES,
   radioTime,
   SLEEP_MINUTES,
+  speakerPageUrl,
   zoneLabel,
 } from "../radio/settings.ts";
 import type { ClockSource, RadioSnapshot, UpdateCheck } from "../radio/types.ts";
+import { ChipGroup } from "./ChipGroup.tsx";
 import { Icon } from "./Icon.tsx";
+import { NetworkCard, PinCard } from "./NetworkSettings.tsx";
 
 interface Props {
   snapshot: RadioSnapshot;
@@ -19,16 +22,6 @@ interface Props {
 }
 
 const encoder = new TextEncoder();
-
-/** A row of toggle chips with a label for assistive technology. */
-export function ChipGroup({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <fieldset className="chips">
-      <legend className="visually-hidden">{label}</legend>
-      {children}
-    </fieldset>
-  );
-}
 
 /** Speaker settings and device information; each card shows only when the radio supports it. */
 export function Settings({ snapshot, controller, onClose }: Props & { onClose(): void }) {
@@ -89,6 +82,8 @@ export function Settings({ snapshot, controller, onClose }: Props & { onClose():
           <QualityCard snapshot={snapshot} controller={controller} />
           <ClockCard snapshot={snapshot} controller={controller} />
           <LanguageCard snapshot={snapshot} controller={controller} />
+          <NetworkCard snapshot={snapshot} controller={controller} />
+          <PinCard snapshot={snapshot} controller={controller} />
           <DeviceCard snapshot={snapshot} controller={controller} />
         </div>
       )}
@@ -435,18 +430,6 @@ function DeviceCard({ snapshot, controller }: Props) {
   const rows: [MessageId, string][] = [
     ["settings.device.model", device.model],
     ["settings.device.version", device.version],
-    ["settings.device.ip", snapshot.config.host],
-    [
-      "settings.device.network",
-      device.network === "ethernet"
-        ? t("settings.device.ethernet")
-        : device.network === "wifi"
-          ? device.ssid
-            ? t("settings.device.wifiNamed", { ssid: device.ssid })
-            : t("settings.device.wifi")
-          : "",
-    ],
-    ["settings.device.mac", device.mac],
     ["settings.device.radioId", device.radioId],
     ["settings.device.serial", device.serial],
   ];
@@ -463,16 +446,13 @@ function DeviceCard({ snapshot, controller }: Props) {
               <dd>{value}</dd>
             </div>
           ))}
-        {device.signal !== undefined && (
-          <div>
-            <dt>{t("settings.device.signal")}</dt>
-            <dd className="signal">
-              <meter min={0} max={100} value={Math.min(100, device.signal)} />
-              <span>{device.signal}</span>
-            </dd>
-          </div>
-        )}
       </dl>
+      <p className="hint">
+        <a href={speakerPageUrl(snapshot.config.host)} target="_blank" rel="noreferrer">
+          {t("settings.device.page")}
+        </a>{" "}
+        {t("settings.device.pageHint")}
+      </p>
       <div className="update-check">
         <button
           type="button"

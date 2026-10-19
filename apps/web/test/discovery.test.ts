@@ -138,4 +138,25 @@ describe("following a speaker to its new address", () => {
       expect(r.controller("002261000001")?.getSnapshot().name).toBe("Living room"),
     );
   });
+
+  it("follows a speaker to the fixed address it was given, once it answers there", async () => {
+    const { speakers } = await home(1);
+    const [living] = speakers;
+    const r = registry([saved("002261000001", NOWHERE, "Living room")]);
+    expect(await r.expectAt("002261000001", NOWHERE, { timeoutMs: 0 })).toBe(true);
+    expect(
+      await r.expectAt("002261000001", living?.host ?? "", { timeoutMs: 50, everyMs: 10 }),
+    ).toBe(true);
+    expect(r.getSnapshot().radios[0]?.host).toBe(living?.host);
+  });
+
+  it("gives up waiting at a fixed address where another radio, or none, answers", async () => {
+    const { speakers } = await home(2);
+    const [, kitchen] = speakers;
+    const r = registry([saved("002261000001", NOWHERE, "Living room")]);
+    expect(
+      await r.expectAt("002261000001", kitchen?.host ?? "", { timeoutMs: 20, everyMs: 10 }),
+    ).toBe(false);
+    expect(r.getSnapshot().radios[0]?.host).toBe(NOWHERE);
+  });
 });

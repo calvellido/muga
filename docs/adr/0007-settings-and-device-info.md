@@ -29,7 +29,7 @@ Date: 2026-10-15. Status: accepted.
    - **Clock:** format, source and DST are each one SET. A network time zone writes `utcOffset`, then the region label, but only where `sys.clock.timeZone` exists. Manual time writes `localDate`/`localTime` from this device's clock, to the minute. After each change Muga waits briefly, then re-reads the radio's time.
 4. **Device info shows the network name.** Muga decodes `sys.net.wlan.connectedSSID`, a byte array, into the name, as UNDOK does. (Corrected 2026-10-16: this first said UNDOK showed the name wrongly. It shows it correctly; the tested network's name had been mistaken for an error.) The MAC address shown is the wired one when Ethernet is enabled. The address shown is the one Muga uses to reach the radio.
 5. **Time zones as the radio lists them.** Zones without a label show their offset ("UTC−11:30"). Labelled ones get the offset in front ("UTC+02:00 · Atenas, Cairo"). The current zone is found by label when the radio stores one, else by offset.
-6. **Left for later:** factory reset (Phase 5, behind strong confirmation), external audio delay (its units are unknown), and "keep network connected" (a hidden dialog in UNDOK).
+6. **Left for later:** factory reset (Phase 5, behind strong confirmation), external audio delay (its units are unknown), and "keep network connected" (a hidden dialog in UNDOK). Keep network connected came with ADR 0019 (2026-10-19), which also moved the network details to their own card.
 7. **"Check for updates" only reads** (added 2026-10-17). In "About this speaker", it reads `sys.isu.state`, `version`, `mandatory`, `summary` and `softwareUpdateProgress`, and says what the radio found at its own last check:
    - no update;
    - not checked since it last started;

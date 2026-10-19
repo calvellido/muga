@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import {
   encodeByteArray,
   enumValue,
+  isByteArrayField,
   lookupNode,
   MULTIROOM_UDN_PREFIX,
   NODE_DEFS,
@@ -13,6 +14,7 @@ import {
 import { artworkSvg } from "./artwork.ts";
 import { createBehaviors, type SimState } from "./behaviors.ts";
 import { createMultiroomNetwork, type MultiroomLink, type MultiroomNetwork } from "./multiroom.ts";
+import { createNetwork, type SimNetwork, type SimNetworkCommit } from "./network.ts";
 import { DEFAULT_PROFILE, type SimListItem, type SimProfile } from "./profile.ts";
 
 export interface SimulatorOptions {
@@ -33,6 +35,8 @@ export interface SimulatorOptions {
   navDelayMs?: number;
   /** One DAB scan step (one station found). Default 300 ms. */
   dabScanStepMs?: number;
+  /** How long a Wi-Fi scan takes. Default 1500 ms. */
+  wifiScanMs?: number;
   /**
    * Speakers to group with: simulators started with the same network list each other and can
    * form multiroom groups. Default: a network of this speaker alone. Needs `behaviors`.
@@ -53,8 +57,11 @@ export interface RadioSimulator {
   readonly udn: string;
   /** `<host>:<port>`, usable as an FsapiClient host. */
   readonly host: string;
+  /** The PIN it accepts now; `sys.info.radioPin` changes it. */
   readonly pin: string;
   readonly sessionId: string | undefined;
+  /** Network settings applied with `sys.net.commitChanges`, oldest first. */
+  readonly networkCommits: readonly SimNetworkCommit[];
   /** Requests received so far (PIN omitted). */
   readonly requests: readonly SimRequest[];
   /** Wire-level value: enums as numbers, byte arrays as hex. */
@@ -165,7 +172,7 @@ function acceptSet(def: NodeDef, raw: string): Outcome {
 }
 
 export async function startSimulator(options: SimulatorOptions = {}): Promise<RadioSimulator> {
-  const pin = options.pin ?? "1234";
+  let pin = options.pin ?? "1234";
   const notifyHoldMs = options.notifyHoldMs ?? 5_000;
   const supportsMultiple = options.supportsMultiple ?? true;
   const withBehaviors = options.behaviors ?? true;
@@ -174,6 +181,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     lists: { ...DEFAULT_PROFILE.lists, ...options.profile?.lists },
     modes: { ...DEFAULT_PROFILE.modes, ...options.profile?.modes },
     missingNodes: options.profile?.missingNodes ?? DEFAULT_PROFILE.missingNodes,
+    wifi: options.profile?.wifi ?? DEFAULT_PROFILE.wifi,
   };
 
   const scalars = new Map<NodePath, WireScalar>();
@@ -198,6 +206,7 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
       items.map((item) => ({ ...item })),
     );
   }
+  scalars.set("netRemote.sys.info.radioPin", pin);
   const missing = new Set(profile.missingNodes.map((p) => resolve(p).path));
   const blocked = new Set<NodePath>();
 
@@ -276,6 +285,19 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
         },
       })
     : undefined;
+  const network: SimNetwork | undefined = withBehaviors
+    ? createNetwork(state, {
+        networks: profile.wifi ?? [],
+        scanMs: options.wifiScanMs ?? 1_500,
+        later(ms, fn) {
+          const timer = setTimeout(() => {
+            timers.delete(timer);
+            fn();
+          }, ms);
+          timers.add(timer);
+        },
+      })
+    : undefined;
 
   /** Known node, implemented by this simulated model. */
   const known = (node: string | undefined) => {
@@ -297,10 +319,17 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     if (entry.def.type === "list") return "FS_FAIL";
     const outcome = acceptSet(entry.def, raw);
     if ("status" in outcome) return outcome.status;
+    // A new PIN: four digits, as the radio's own web page asks for. Later requests need it.
+    if (entry.path === "netRemote.sys.info.radioPin") {
+      if (!/^\d{4}$/.test(String(outcome.value))) return "FS_FAIL";
+      pin = String(outcome.value);
+    }
     scalars.set(entry.path, outcome.value);
     notify(entry.path, entry.def);
     const status = behaviors?.apply(entry.path, outcome.value);
     if (status) return status;
+    const networkStatus = network?.apply(entry.path, outcome.value);
+    if (networkStatus) return networkStatus;
     return link?.apply(entry.path, outcome.value) || "FS_OK";
   };
 
@@ -310,7 +339,12 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     const names = new Set(declared.map((f) => f.name));
     const extra = Object.keys(item).filter((name) => name !== "key" && !names.has(name));
     const fields = [
-      ...declared.map((f) => [f.name, valueXml(f.type, item[f.name])]),
+      ...declared.map((f) => [
+        f.name,
+        isByteArrayField(f)
+          ? `<array>${encodeByteArray(String(item[f.name] ?? ""))}</array>`
+          : valueXml(f.type, item[f.name]),
+      ]),
       ...extra.map((name) => [name, valueXml("c8", item[name])]),
     ]
       .map(([name, xml]) => `<field name="${String(name).toLowerCase()}">${xml}</field>`)
@@ -322,6 +356,16 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     const url = new URL(req.url ?? "/", "http://sim");
     if (url.pathname === "/artwork.svg") {
       return send(res, 200, artworkSvg(url.searchParams.get("name") ?? ""), "image/svg+xml");
+    }
+    // Real speakers serve Frontier's own web page here (ADR 0019).
+    if (url.pathname === "/web/index.html") {
+      const name = escapeXml(String(scalars.get("netRemote.sys.info.friendlyName") ?? ""));
+      return send(
+        res,
+        200,
+        `<!doctype html><meta charset="utf-8"><title>${name}</title><h1>${name}</h1><p>A simulated speaker. A real one shows its own settings page here.</p>\n`,
+        "text/html",
+      );
     }
     if (url.pathname === "/device") {
       const name = String(scalars.get("netRemote.sys.info.friendlyName") ?? "");
@@ -473,9 +517,14 @@ export async function startSimulator(options: SimulatorOptions = {}): Promise<Ra
     url: baseUrl,
     udn,
     host,
-    pin,
+    get pin() {
+      return pin;
+    },
     get sessionId() {
       return sessionId;
+    },
+    get networkCommits() {
+      return network?.commits ?? [];
     },
     requests,
     ...state,

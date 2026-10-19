@@ -1,6 +1,6 @@
 import { enumName, enumValue } from "./catalog.ts";
 import { FsapiError } from "./errors.ts";
-import type { FieldType, NodeDef, ScalarType, WireListItem, WireValue } from "./types.ts";
+import type { FieldDef, FieldType, NodeDef, ScalarType, WireListItem, WireValue } from "./types.ts";
 
 export type ScalarValue = number | string;
 
@@ -125,6 +125,11 @@ function encodeInteger(
   return String(value);
 }
 
+/** A `u8` field longer than one byte holds bytes, such as the SSID in `sys.net.wlan.scanList`. */
+export function isByteArrayField(field: FieldDef): boolean {
+  return field.type === "u8" && field.length > 1;
+}
+
 /**
  * Decodes a list item using the catalog's field definitions (matched case-insensitively).
  * Fields the catalog doesn't know are kept as raw text under their lower-cased name.
@@ -141,7 +146,12 @@ export function decodeListItem(
     known.add(lower);
     if (lower === "key") continue;
     const wire = item.fields[lower];
-    if (wire) out[field.name] = decodeTyped(field.type, undefined, wire, `${node}.${field.name}`);
+    if (!wire) continue;
+    out[field.name] = isByteArrayField(field)
+      ? wire.tag === "c8_array"
+        ? wire.text
+        : decodeByteArray(wire.text)
+      : decodeTyped(field.type, undefined, wire, `${node}.${field.name}`);
   }
   for (const [name, wire] of Object.entries(item.fields)) {
     if (!known.has(name) && !(name in out)) out[name] = wire.text;

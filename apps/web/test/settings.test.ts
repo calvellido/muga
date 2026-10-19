@@ -1,5 +1,13 @@
+import { ipv4ToU32 } from "@muga/fsapi-core";
 import { describe, expect, it } from "vitest";
-import { currentZone, radioTime, zoneLabel } from "../src/radio/settings.ts";
+import {
+  currentZone,
+  hostAt,
+  radioTime,
+  speakerPageUrl,
+  validPassphrase,
+  zoneLabel,
+} from "../src/radio/settings.ts";
 import { simulatedRadio } from "./support.ts";
 
 const setup = simulatedRadio();
@@ -57,33 +65,37 @@ describe("clock helpers", () => {
 });
 
 describe("SettingsManager", () => {
-  it("reads device information, with the Wi-Fi name decoded", async () => {
+  it("reads device and network information, with the Wi-Fi name decoded", async () => {
     const radio = await loaded();
     expect(settingsOf(radio)).toMatchObject({
       status: "ready",
-      device: {
-        model: "Muga Sim",
-        radioId: "002261000000",
-        serial: "SIM0000001",
-        network: "wifi",
+      device: { model: "Muga Sim", radioId: "002261000000", serial: "SIM0000001" },
+      network: {
+        connection: "wifi",
         ssid: "MugaNet",
         signal: 60,
-        mac: "00:22:61:00:00:00",
+        dhcp: true,
+        address: "192.0.2.10",
+        subnetMask: "255.255.255.0",
+        gateway: "192.0.2.1",
+        dns: ["192.0.2.1"],
+        wifiMac: "00:22:61:00:00:00",
+        ethernetMac: "00:22:61:00:00:01",
+        region: "EUROPE",
+        keepConnected: true,
+        editable: true,
       },
+      pinChangeable: true,
     });
   });
 
-  it("shows the wired MAC address when Ethernet is in use", async () => {
+  it("knows when Ethernet is in use", async () => {
     const radio = await loaded({
       sim: {
         profile: { values: { "netRemote.sys.net.wired.interfaceEnable": "INTERFACE_ENABLE" } },
       },
     });
-    expect(settingsOf(radio).device).toMatchObject({
-      network: "ethernet",
-      mac: "00:22:61:00:00:01",
-      signal: undefined,
-    });
+    expect(settingsOf(radio).network).toMatchObject({ connection: "ethernet", signal: undefined });
   });
 
   it("renames the speaker", async () => {
@@ -220,6 +232,191 @@ describe("SettingsManager", () => {
       quality: undefined,
       language: undefined,
     });
+  });
+
+  it("offers no network changes or PIN change where those nodes are missing", async () => {
+    const radio = await loaded({
+      sim: {
+        profile: {
+          missingNodes: [
+            "netRemote.sys.net.ipConfig.dhcp",
+            "netRemote.sys.net.keepConnected",
+            "netRemote.sys.info.radioPin",
+          ],
+        },
+      },
+    });
+    expect(settingsOf(radio)).toMatchObject({
+      network: { editable: false, dhcp: undefined, keepConnected: undefined },
+      pinChangeable: false,
+    });
+    expect(
+      await radio.controller.settings.changeNetwork({
+        connection: "wifi",
+        addressing: { dhcp: true },
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("network settings", () => {
+  it("keeps the speaker connected in standby, or not", async () => {
+    const { sim, controller } = await loaded();
+    await controller.settings.setKeepConnected(false);
+    expect(sim.get("netRemote.sys.net.keepConnected")).toBe(0);
+    expect(controller.getSnapshot().settings.network?.keepConnected).toBe(false);
+  });
+
+  it("lists the networks a scan finds: strongest access point per name, hidden ones left out", async () => {
+    const { controller } = await loaded({ sim: { wifiScanMs: 20 } });
+    await controller.settings.scanWifi();
+    expect(controller.getSnapshot().settings.wifiScan).toEqual({
+      status: "ready",
+      networks: [
+        { key: 0, ssid: "MugaNet", secured: true, signal: 60 },
+        { key: 1, ssid: "Frontera 5G", secured: true, signal: 48 },
+        { key: 3, ssid: "Café Muga", secured: false, signal: 35 },
+      ],
+    });
+  });
+
+  it("switches Wi-Fi on for a scan from Ethernet, and off again", async () => {
+    const { sim, controller } = await loaded({
+      sim: {
+        wifiScanMs: 20,
+        profile: {
+          values: {
+            "netRemote.sys.net.wired.interfaceEnable": "INTERFACE_ENABLE",
+            "netRemote.sys.net.wlan.interfaceEnable": "INTERFACE_DISABLE",
+          },
+        },
+      },
+    });
+    await controller.settings.scanWifi();
+    expect(controller.getSnapshot().settings.wifiScan?.networks).toHaveLength(3);
+    expect(sim.get("netRemote.sys.net.wlan.interfaceEnable")).toBe(0);
+  });
+
+  it("joins a scanned network with a fixed address, in the order the radio's own page uses", async () => {
+    const { sim, controller } = await loaded({ sim: { wifiScanMs: 20 } });
+    await controller.settings.scanWifi();
+    const before = sim.requests.length;
+    const done = await controller.settings.changeNetwork({
+      connection: "wifi",
+      wifi: {
+        network: { kind: "scanned", key: 1, ssid: "Frontera 5G", secured: true },
+        passphrase: "frontier!",
+      },
+      addressing: {
+        dhcp: false,
+        address: "192.0.2.42",
+        subnetMask: "255.255.255.0",
+        gateway: "192.0.2.1",
+        dns: ["192.0.2.1", ""],
+      },
+    });
+    expect(done).toBe(true);
+    expect(sim.networkCommits).toEqual([
+      expect.objectContaining({
+        ssid: "Frontera 5G",
+        passphrase: "frontier!",
+        wifi: true,
+        dhcp: false,
+        address: ipv4ToU32("192.0.2.42"),
+        dns: [ipv4ToU32("192.0.2.1"), 0],
+      }),
+    ]);
+    const sets = sim.requests
+      .slice(before)
+      .filter((r) => r.verb === "SET")
+      .map((r) => r.node?.replace("netRemote.sys.", ""));
+    expect(sets).toEqual([
+      "net.wlan.setPassphrase",
+      "net.wlan.selectAP",
+      "net.ipConfig.dhcp",
+      "net.ipConfig.address",
+      "net.ipConfig.subnetMask",
+      "net.ipConfig.gateway",
+      "net.ipConfig.dnsPrimary",
+      "net.ipConfig.dnsSecondary",
+      "net.commitChanges",
+    ]);
+    expect(controller.getSnapshot().settings.wifiScan).toBeUndefined();
+  });
+
+  it("joins a network typed by hand with the authentication and encryption it needs", async () => {
+    const { sim, controller } = await loaded();
+    await controller.settings.changeNetwork({
+      connection: "wifi",
+      wifi: {
+        network: { kind: "manual", ssid: "Hidden Muga", security: "WPA2" },
+        passphrase: "a long secret",
+      },
+      addressing: { dhcp: true },
+    });
+    expect(sim.networkCommits.at(-1)).toMatchObject({
+      ssid: "Hidden Muga",
+      passphrase: "a long secret",
+      auth: 3,
+      encryption: 3,
+      dhcp: true,
+    });
+  });
+
+  it("moves a speaker from Ethernet to Wi-Fi", async () => {
+    const { sim, controller } = await loaded({
+      sim: {
+        profile: {
+          values: {
+            "netRemote.sys.net.wired.interfaceEnable": "INTERFACE_ENABLE",
+            "netRemote.sys.net.wlan.interfaceEnable": "INTERFACE_DISABLE",
+          },
+        },
+      },
+    });
+    await controller.settings.changeNetwork({
+      connection: "wifi",
+      wifi: { network: { kind: "manual", ssid: "Café Muga", security: "NONE" }, passphrase: "" },
+      addressing: { dhcp: true },
+    });
+    expect(sim.networkCommits.at(-1)).toMatchObject({
+      wifi: true,
+      ethernet: false,
+      ssid: "Café Muga",
+    });
+    expect(sim.networkCommits.at(-1)?.passphrase).toBeUndefined();
+  });
+});
+
+describe("speaker PIN", () => {
+  it("changes the PIN and keeps talking to the speaker with the new one", async () => {
+    const { sim, controller } = await loaded();
+    expect(await controller.settings.changePin("12a4")).toBe(false);
+    expect(await controller.settings.changePin("4321")).toBe(true);
+    expect(sim.pin).toBe("4321");
+    await controller.refreshNow();
+    expect(controller.getSnapshot().connection).toBe("online");
+  });
+});
+
+describe("network helpers", () => {
+  it("checks passphrases as WPA and WEP need them", () => {
+    expect(validPassphrase("WPA2", "short")).toBe(false);
+    expect(validPassphrase("WPA2", "long enough")).toBe(true);
+    expect(validPassphrase("WPA", "x".repeat(64))).toBe(false);
+    expect(validPassphrase("WEP", "abcde")).toBe(true);
+    expect(validPassphrase("WEP", "0123456789")).toBe(true);
+    expect(validPassphrase("WEP", "abcdef")).toBe(false);
+    expect(validPassphrase("NONE", "")).toBe(true);
+  });
+
+  it("finds the speaker's own page, and its new host after a fixed address", () => {
+    expect(speakerPageUrl("192.0.2.10")).toBe("http://192.0.2.10/web/index.html");
+    expect(speakerPageUrl("http://192.0.2.10:80/fsapi")).toBe("http://192.0.2.10/web/index.html");
+    expect(speakerPageUrl("127.0.0.1:8123")).toBe("http://127.0.0.1:8123/web/index.html");
+    expect(hostAt("192.0.2.10", "192.0.2.42")).toBe("192.0.2.42");
+    expect(hostAt("127.0.0.1:8123", "192.0.2.42")).toBe("192.0.2.42:8123");
+    expect(hostAt("kitchen-radio.local", "192.0.2.42")).toBeUndefined();
   });
 });
 
