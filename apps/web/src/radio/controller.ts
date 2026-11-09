@@ -12,6 +12,7 @@ import { LatestWins } from "./latest.ts";
 import { GroupMixer, MIXER_NODES } from "./mixer.ts";
 import { PresetManager } from "./presets.ts";
 import { initialSettings, SettingsManager } from "./settings.ts";
+import { Troubleshooter } from "./troubleshoot.ts";
 import { FmTuner } from "./tuner.ts";
 import type {
   ActionError,
@@ -101,6 +102,8 @@ export interface RadioControllerOptions {
   navTimeoutMs?: number;
   /** DAB scan progress reads. Default 1000 ms. */
   dabPollMs?: number;
+  /** How long "Unstick speaker" leaves the radio in standby. Default 3000 ms. */
+  standbyMs?: number;
   now?: () => number;
 }
 
@@ -144,6 +147,7 @@ export function initialSnapshot(config: RadioConfig): RadioSnapshot {
     dabScan: { status: "idle", found: 0 },
     settings: initialSettings(),
     mixer: undefined,
+    troubleshoot: { step: "idle", report: undefined, groupName: undefined },
     lastError: undefined,
   };
 }
@@ -194,6 +198,8 @@ export class RadioController {
   readonly settings: SettingsManager;
   /** Volumes of the multiroom group this radio serves. */
   readonly mixer: GroupMixer;
+  /** "Unstick speaker". */
+  readonly troubleshoot: Troubleshooter;
   /** For multiroom changes, which involve several radios. */
   readonly client: FsapiClient;
 
@@ -243,6 +249,7 @@ export class RadioController {
       navPollMs: options.navPollMs ?? 500,
       navTimeoutMs: options.navTimeoutMs ?? 30_000,
       dabPollMs: options.dabPollMs ?? 1_000,
+      standbyMs: options.standbyMs ?? 3_000,
       now: options.now ?? Date.now,
     };
     const nav: NavOptions = { pollMs: this.opts.navPollMs, timeoutMs: this.opts.navTimeoutMs };
@@ -269,6 +276,9 @@ export class RadioController {
     this.dab = new DabScanner(context, this.browse, { pollMs: this.opts.dabPollMs });
     this.settings = new SettingsManager(context);
     this.mixer = new GroupMixer(context);
+    this.troubleshoot = new Troubleshooter(context, this.browse, {
+      standbyMs: this.opts.standbyMs,
+    });
   }
 
   // Store interface (for useSyncExternalStore)

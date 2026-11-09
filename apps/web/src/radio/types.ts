@@ -102,6 +102,21 @@ export interface DabScanState {
   found: number;
 }
 
+/** A radio's playback state as it reported it, as node path and value pairs. */
+export interface StatusReport {
+  at: number;
+  entries: [string, string][];
+}
+
+export interface TroubleshootState {
+  /** confirmGroup: the radio is in a multiroom group, and unsticking it waits for a yes. */
+  step: "idle" | "checking" | "confirmGroup" | "reconnecting" | "restarting" | "done" | "failed";
+  /** Read at the start of the last unstick. */
+  report: StatusReport | undefined;
+  /** The group's name, while asking. */
+  groupName: string | undefined;
+}
+
 export interface DeviceInfo {
   model: string;
   version: string;
@@ -279,6 +294,7 @@ export interface RadioSnapshot {
   settings: SettingsState;
   /** Read while this radio serves the multiroom group on screen. */
   mixer: GroupMix | undefined;
+  troubleshoot: TroubleshootState;
   lastError: ActionError | undefined;
 }
 
