@@ -11,7 +11,9 @@ import {
   speakerPageUrl,
   zoneLabel,
 } from "../radio/settings.ts";
+import { reportText } from "../radio/troubleshoot.ts";
 import type { ClockSource, RadioSnapshot, UpdateCheck } from "../radio/types.ts";
+import { APP_VERSION } from "../version.ts";
 import { ChipGroup } from "./ChipGroup.tsx";
 import { Icon } from "./Icon.tsx";
 import { NetworkCard, PinCard } from "./NetworkSettings.tsx";
@@ -85,6 +87,7 @@ export function Settings({ snapshot, controller, onClose }: Props & { onClose():
           <NetworkCard snapshot={snapshot} controller={controller} />
           <PinCard snapshot={snapshot} controller={controller} />
           <DeviceCard snapshot={snapshot} controller={controller} />
+          <TroubleshootCard snapshot={snapshot} controller={controller} />
         </div>
       )}
     </section>
@@ -463,6 +466,97 @@ function DeviceCard({ snapshot, controller }: Props) {
           {t(update?.status === "checking" ? "settings.update.checking" : "settings.update.check")}
         </button>
         <UpdateResult update={update} />
+      </div>
+    </div>
+  );
+}
+
+/** "Unstick speaker" (`Troubleshooter`), and the status report it reads first. */
+function TroubleshootCard({ snapshot, controller }: Props) {
+  const t = useT();
+  const intl = useIntl();
+  const { step, report, groupName } = snapshot.troubleshoot;
+  const [copied, setCopied] = useState(false);
+  const busy = step === "checking" || step === "reconnecting" || step === "restarting";
+  const label: MessageId =
+    step === "checking"
+      ? "settings.troubleshoot.checking"
+      : step === "reconnecting"
+        ? "settings.troubleshoot.reconnecting"
+        : step === "restarting"
+          ? "settings.troubleshoot.restarting"
+          : "settings.troubleshoot.unstick";
+
+  async function copy() {
+    if (!report) return;
+    const { device } = snapshot.settings;
+    const text = reportText(report, [
+      ["Muga", APP_VERSION],
+      ["Speaker", snapshot.name],
+      ["Model", device?.model || snapshot.model],
+      ["Firmware", device?.version || snapshot.version],
+    ]);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="card settings-card">
+      <h3>{t("settings.troubleshoot.title")}</h3>
+      <p className="hint">{t("settings.troubleshoot.hint")}</p>
+      <div className="update-check">
+        {step === "confirmGroup" ? (
+          <div role="alert" className="update-check">
+            <p>{t("settings.troubleshoot.group", { group: groupName || snapshot.name })}</p>
+            <div className="notice__actions">
+              <button
+                type="button"
+                className="button button--small"
+                onClick={() => void controller.troubleshoot.confirm()}
+              >
+                {t("settings.troubleshoot.unstick")}
+              </button>
+              <button
+                type="button"
+                className="button button--ghost button--small"
+                onClick={() => controller.troubleshoot.cancel()}
+              >
+                {t("settings.troubleshoot.cancel")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="button button--ghost button--small"
+            disabled={busy || snapshot.connection !== "online"}
+            onClick={() => void controller.troubleshoot.start()}
+          >
+            {t(label)}
+          </button>
+        )}
+        <p className="hint">{t("settings.troubleshoot.unstickHint")}</p>
+        {(step === "done" || step === "failed") && (
+          <p role="status">{t(`settings.troubleshoot.${step}`)}</p>
+        )}
+        {report && (
+          <p className="hint">
+            {t("settings.troubleshoot.report", {
+              time: intl.formatTime(report.at, { hour: "2-digit", minute: "2-digit" }),
+            })}{" "}
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => void copy()}
+            >
+              {t(copied ? "settings.troubleshoot.copied" : "settings.troubleshoot.copy")}
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

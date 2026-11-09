@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0 (2026-11-09)
+
+- **Unstick speaker,** in each speaker's settings ("Troubleshooting"), for a speaker that says it's playing but stays silent. Muga ends the speaker's connection with any app, then puts it in standby and turns it back on in the same source. If the speaker is in a group, Muga asks first, since the group's other speakers may go quiet too.
+  - **Copy details:** what the speaker reported just before, such as its source, playback and Spotify status, ready to paste when reporting the problem.
+
 ## 2.1.0 (2026-10-19)
 
 - **Network settings** for each speaker: how it's connected, with its address, gateway, DNS servers and Wi-Fi signal.

@@ -33,6 +33,7 @@ const SAMPLE_VALUES = {
   mark: "▶",
   language: "English",
   version: "1.0.0",
+  time: "21:43",
   progress: 45,
   proxy: "https://radios.example.com",
   ranges: "192.168.1.x",
